@@ -4,6 +4,6 @@ export class CreateUserDto {
   @IsNotEmpty()
   email: string;
   @IsNotEmpty()
-  nikName: string;
+  nickname: string;
   role: string;
 }

@@ -11,7 +11,7 @@ export class UserProfile {
   email: string;
 
   @Prop()
-  nikName: string;
+  nickname: string;
 
   @Prop({ default: false })
   role: boolean;
