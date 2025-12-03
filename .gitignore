@@ -1,8 +1,48 @@
-/app/
-/crtbot/
-/data/
-/node_modules/
-/storage/
+# Dependencies
+node_modules/
+schat-app/node_modules/
 
+# Build outputs
+dist/
+schat-app/dist/
+build/
+*.log
+
+# Environment
 .env
-package-lock.json
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Docker
+docker-compose.override.yml
+docker-compose.prod.yml
+secrets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.nyc_output/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# NestJS specific
+.nestcli.json
+*.pid
