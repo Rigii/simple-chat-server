@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { TRoomMessageType } from '../types';
-import { CHAT_DB_COLLECTIONS } from '../constants/constants';
+import { CHAT_DB_COLLECTIONS } from '../constants/chat.constants';
 
 export type RoomMessageDocument = HydratedDocument<RoomMessage>;
 
@@ -19,7 +19,16 @@ export class RoomMessage {
   nickname: string;
 
   @Prop()
+  participantId: string;
+
+  @Prop()
+  chatRoomId: string;
+
+  @Prop()
   text: string;
+
+  @Prop()
+  isAdmin: boolean;
 
   created: Date;
   updated: Date;

@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { CHAT_DB_COLLECTIONS } from '../constants/constants';
+import mongoose, { HydratedDocument } from 'mongoose';
+import { CHAT_DB_COLLECTIONS } from '../constants/chat.constants';
+import { UserProfile } from 'src/user/schemas/user.schema';
 
 export type ChatRoomDocument = HydratedDocument<ChatRoom>;
 
@@ -14,12 +15,13 @@ export class ChatRoom {
   @Prop({ required: true })
   chat_name: string;
 
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user_profile' }],
+  })
+  participants: UserProfile[];
+
   created: Date;
   updated: Date;
-
-  get id(): string {
-    return this._id.toString();
-  }
 }
 
 export const ChatRoomSchema = SchemaFactory.createForClass(ChatRoom);

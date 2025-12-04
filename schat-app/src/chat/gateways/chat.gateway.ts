@@ -6,10 +6,10 @@ import {
 import { ChatService } from '../services/chat.service';
 import { Namespace, Socket } from 'socket.io';
 import { UseFilters } from '@nestjs/common';
-import { socketMessageNamespaces } from '../constants/chat.constants';
-import { MessageService } from '../services/message.service';
+import { socketMessageNamespaces } from '../constants/chat.events';
 import { PostRoomMessageDto } from '../dto/room-message.dto';
-import { WsErrorFilter } from 'src/shared/ws-error.filter';
+import { WsErrorFilter } from 'shared/ws-error.filter';
+import { MessageService } from '../services/message.service';
 
 @WebSocketGateway({ namespace: 'chat_room' })
 @UseFilters(new WsErrorFilter())
@@ -42,7 +42,7 @@ export class ChatGateway {
 
     /* Join user to the chatroom only if he's entered the chat room on the frontend */
     if (roomIds) {
-      this.chatService.handleJoinSingleUserChatRoom({
+      this.chatService.handleJoinSingleUserDefaultChatRooms({
         roomId: roomIds,
         client,
         userId,

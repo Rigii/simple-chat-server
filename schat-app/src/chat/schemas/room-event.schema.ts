@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { TRoomEventType } from '../types';
-import { CHAT_DB_COLLECTIONS } from '../constants/constants';
+import { CHAT_DB_COLLECTIONS } from '../constants/chat.constants';
 
 export type RoomEventDocument = HydratedDocument<RoomEvent>;
 
