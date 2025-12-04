@@ -21,17 +21,17 @@ services:
       retries: 3
 
   mongodb-compass:
-  image: mongo:6-alpine
-  container_name: ${PROJECT_NAME}-compass
-  restart: unless-stopped
-  ports:
-    - "${MONGO_COMPASS_PORT}:27017"
-  env_file: .env
-  environment:
-    MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-    MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-  depends_on:
-    - mongodb
+    image: mongo:6-alpine
+    container_name: ${PROJECT_NAME}-compass
+    restart: unless-stopped
+    ports:
+      - "${MONGO_COMPASS_PORT}:27017"
+    env_file: .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    depends_on:
+      - mongodb
 
   redis:
     image: redis:7-alpine
@@ -73,29 +73,26 @@ services:
   app:
     build:
       context: ./nest-app
-      target: development
+      dockerfile: Dockerfile
+      target: production
     container_name: ${PROJECT_NAME}-app
     restart: unless-stopped
     ports:
-      - "${APP_PORT}:3000"
-      - "9229:9229"
+      - "${APP_PORT}:5001"
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
-      - MONGODB_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DATABASE}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    volumes:
-      - ./nest-app:/usr/src/app
-      - /usr/src/app/node_modules
+      NODE_ENV: "production"
+      MONGODB_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DATABASE}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: npm run start:dev
+    command: ["node", "dist/main"]
 
 volumes:
   ${MONGO_DATA_VOLUME}:
