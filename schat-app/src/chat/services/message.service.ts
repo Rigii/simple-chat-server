@@ -4,16 +4,19 @@ import {
   roomMessageStatusEvent,
   socketMessageNamespaces,
 } from '../constants/chat.events';
-import { ChatCacheService } from './chat-cache.service';
 import { PostRoomMessageDto } from '../dto/room-message.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { Model } from 'mongoose';
 import { strings } from '../strings';
+import { ChatCacheService } from './chat-cache.service';
+import { ChatRoom } from '../schemas/chat-room.schema';
 
 @Injectable()
 export class MessageService {
   constructor(
+    @InjectModel(ChatRoom.name)
+    private ChatRoomModel: Model<ChatRoom>,
     private readonly chatCacheService: ChatCacheService,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
   ) {}
@@ -56,8 +59,7 @@ export class MessageService {
       const { chatRoomId, message, senderId, senderName } = dto;
 
       /* Check if the user is in the chat room. Update cache if he's not */
-      const currentChatRoom =
-        await this.chatCacheService.getChatRoomWithCache(chatRoomId);
+      const currentChatRoom = await this.ChatRoomModel.findById(chatRoomId);
 
       if (!currentChatRoom) {
         const errorMessage = strings.chatRoomsNotFound.replace(
@@ -87,8 +89,8 @@ export class MessageService {
 
       /* If the user not awailable in the chatroom, send message to his private channel */
       const interlocutorIds =
-        currentChatRoom.participants.map(
-          (participant) => participant.interlocutor_id,
+        currentChatRoom.participants.map((participant) =>
+          participant._id.toString(),
         ) || [];
 
       const activeChatUsers = activeUsers.get(chatRoomId);

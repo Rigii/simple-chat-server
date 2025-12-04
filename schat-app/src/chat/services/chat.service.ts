@@ -4,7 +4,6 @@ import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Namespace, Socket } from 'socket.io';
-import { UserProfile, UserProfileDocument } from 'src/user/schemas/user.schema';
 import { chatRoomEmitEvents } from '../constants/chat.events';
 import { strings } from '../strings';
 
@@ -12,8 +11,8 @@ import { strings } from '../strings';
 export class ChatService implements OnModuleInit {
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
-    @InjectModel(UserProfile.name)
-    private userProfileModel: Model<UserProfileDocument>,
+    // @InjectModel(UserProfile.name)
+    // private userProfileModel: Model<UserProfileDocument>,
   ) {}
 
   private async initializeDefaultChatRooms() {
@@ -30,31 +29,31 @@ export class ChatService implements OnModuleInit {
     }
   }
 
-  private async getUserFromChat({
-    roomId,
-    userId,
-  }: {
-    roomId: string;
-    userId: string;
-  }): Promise<UserProfile | null> {
-    const chatRoom = await this.chatRoomModel
-      .findOne({
-        _id: roomId,
-        participants: userId,
-      })
-      .populate({
-        path: 'participants',
-        match: { _id: userId },
-        select: 'nickname email',
-      })
-      .exec();
+  // private async getUserFromChat({
+  //   roomId,
+  //   userId,
+  // }: {
+  //   roomId: string;
+  //   userId: string;
+  // }): Promise<UserProfile | null> {
+  //   const chatRoom = await this.chatRoomModel
+  //     .findOne({
+  //       _id: roomId,
+  //       participants: userId,
+  //     })
+  //     .populate({
+  //       path: 'participants',
+  //       match: { _id: userId },
+  //       select: 'nickname email',
+  //     })
+  //     .exec();
 
-    if (!chatRoom || chatRoom.participants.length === 0) {
-      return null;
-    }
+  //   if (!chatRoom || chatRoom.participants.length === 0) {
+  //     return null;
+  //   }
 
-    return chatRoom.participants[0]; // Вернет только указанного пользователя
-  }
+  //   return chatRoom.participants[0]; // Вернет только указанного пользователя
+  // }
 
   async onModuleInit() {
     this.initializeDefaultChatRooms();

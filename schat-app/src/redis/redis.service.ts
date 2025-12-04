@@ -32,10 +32,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.quit();
   }
 
-  async get(key: string): Promise<string | object | null> {
-    return await this.client.get(key);
+  async get(key: string): Promise<string | null> {
+    return (await this.client.get(key)) as Promise<string | null>;
   }
-
   async set(key: string, value: string, ttl?: number): Promise<void> {
     await this.client.set(key, value, { PX: ttl });
   }
