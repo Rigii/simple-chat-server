@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ChatRoom, ChatRoomSchema } from './schemas/chat-room.schema';
 import { UserProfile, UserProfileSchema } from 'src/user/schemas/user.schema';
 import { RoomMessage, RoomMessageSchema } from './schemas/room-message.schema';
+import { RedisService } from 'src/redis/redis.service';
 
 @Module({
   imports: [
@@ -16,6 +17,12 @@ import { RoomMessage, RoomMessageSchema } from './schemas/room-message.schema';
       { name: RoomMessage.name, schema: RoomMessageSchema },
     ]),
   ],
-  providers: [ChatGateway, ChatService, MessageService, ChatCacheService],
+  providers: [
+    ChatGateway,
+    ChatService,
+    MessageService,
+    ChatCacheService,
+    RedisService,
+  ],
 })
 export class ChatModule {}
