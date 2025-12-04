@@ -1,8 +1,7 @@
 import 'dotenv/config';
 
 export const AppConfig = () => ({
-  port: Number(process.env.PORT),
-  jwtSecret: process.env.JWT_SECRET,
+  port: Number(process.env.APP_PORT),
   mongo_database: {
     uri: process.env.DB_MONGO_URI,
     retryAttempts: 10,
