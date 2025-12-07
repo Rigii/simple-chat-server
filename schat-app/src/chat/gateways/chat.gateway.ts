@@ -10,8 +10,11 @@ import { socketMessageNamespaces } from '../constants/chat.events';
 import { PostRoomMessageDto } from '../dto/room-message.dto';
 import { WsErrorFilter } from 'shared/ws-error.filter';
 import { MessageService } from '../services/message.service';
+import { CHAT_NAMESPACES } from '../constants/chat.routes';
 
-@WebSocketGateway({ namespace: 'chat_room' })
+@WebSocketGateway({
+  namespace: CHAT_NAMESPACES.chatRoom,
+})
 @UseFilters(new WsErrorFilter())
 export class ChatGateway {
   constructor(
@@ -24,13 +27,17 @@ export class ChatGateway {
   @WebSocketServer()
   io: Namespace; // server: Server not working. Use "Namespace" instead;
   private activeUsers = new Map<string, Set<string>>();
-  async handleConnection(client: Socket) {
-    const { userId, roomIds } = client.handshake.query as {
+
+  handleConnection(client: Socket) {
+    console.log('🔥 Client connected:');
+
+    const { userId, chatId } = client.handshake.query as {
       userId: string;
-      roomIds?: string;
+      chatId?: string;
     };
-    if (!userId) {
-      console.error('Invalid connection query params');
+    if (!userId || typeof userId !== 'string') {
+      console.error('Invalid or missing userId:', userId);
+      client.disconnect();
       return;
     }
 
@@ -41,9 +48,9 @@ export class ChatGateway {
     });
 
     /* Join user to the chatroom only if he's entered the chat room on the frontend */
-    if (roomIds) {
+    if (chatId) {
       this.chatService.handleJoinSingleUserDefaultChatRooms({
-        roomId: roomIds,
+        roomId: chatId,
         client,
         userId,
         activeUsers: this.activeUsers,
@@ -52,7 +59,7 @@ export class ChatGateway {
     }
   }
 
-  async handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket) {
     const userId = client.handshake.query.userId as string;
 
     this.chatService.roomsDisconnectInterlocutor({

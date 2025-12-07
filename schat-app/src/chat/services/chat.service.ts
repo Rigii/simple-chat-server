@@ -15,7 +15,7 @@ export class ChatService implements OnModuleInit {
     // private userProfileModel: Model<UserProfileDocument>,
   ) {}
 
-  private async initializeDefaultChatRooms() {
+  private async createDefaultChatRoomDBRecords() {
     try {
       const roomPromises = MOCKED_CHAT_ROOMS.map((room) => {
         return this.chatRoomModel.create({ chat_name: room.chat_name });
@@ -56,7 +56,7 @@ export class ChatService implements OnModuleInit {
   // }
 
   async onModuleInit() {
-    this.initializeDefaultChatRooms();
+    this.createDefaultChatRoomDBRecords();
   }
 
   async getAllDefaultChatRooms(): Promise<ChatRoom[]> {
@@ -77,6 +77,8 @@ export class ChatService implements OnModuleInit {
     userId: string;
     activeUsers: Map<string, Set<string>>;
   }) {
+    console.log(`User ${clientId} is active.`);
+
     if (!activeUsers.has(userId)) {
       activeUsers.set(userId, new Set());
     }
@@ -86,27 +88,6 @@ export class ChatService implements OnModuleInit {
     }
 
     activeUsers.get(userId).add(clientId);
-  }
-
-  async addUserToChatRoomRecord(
-    roomId: string,
-    userId: string,
-  ): Promise<ChatRoom> {
-    const chatRoom = await this.chatRoomModel
-      .findByIdAndUpdate(
-        roomId,
-        {
-          $addToSet: { participants: userId },
-        },
-        { new: true },
-      )
-      .populate('participants', 'nickname email');
-
-    if (!chatRoom) {
-      throw new Error('Chat room not found');
-    }
-
-    return chatRoom;
   }
 
   handleJoinSingleUserDefaultChatRooms = async ({
@@ -122,6 +103,9 @@ export class ChatService implements OnModuleInit {
     activeUsers: Map<string, Set<string>>;
     io: Namespace;
   }) => {
+    console.log(11111112221, userId, roomId);
+    console.log(22222222, activeUsers);
+
     try {
       const chatRooms = await this.getAllDefaultChatRooms();
       chatRooms.map(async (room: ChatRoom) => {
