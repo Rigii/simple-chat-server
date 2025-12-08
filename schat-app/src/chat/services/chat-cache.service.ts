@@ -30,7 +30,6 @@ export class ChatCacheService {
   async getChatRoomWithCache(chatRoomId: string): Promise<ChatRoom | null> {
     const cacheKey = `chatroom:${chatRoomId}`;
     const cached = await this.redisService.get(cacheKey);
-    console.log(555555, 'CACHED_ROOM', cached);
 
     if (cached) {
       return JSON.parse(cached as string);
@@ -59,7 +58,6 @@ export class ChatCacheService {
         rooms.push(JSON.parse(cached as string) as ChatRoom);
       }
     }
-    console.log(7777777, 'CACHED_ROOMS', rooms);
 
     if (!rooms.length) {
       const dbRooms = await this.ChatRoomModel.find()

@@ -27,7 +27,6 @@ export class MessageService {
   async postRoomMessage({
     dto,
     client,
-    activeUsers,
     io,
   }: {
     dto: PostRoomMessageDto;
@@ -86,28 +85,6 @@ export class MessageService {
         id: savedMessage._id.toString(),
         ...savedMessage.toObject(),
       };
-
-      /* If the user not available in the chatroom, send message to his private channel */
-      const interlocutorIds =
-        currentChatRoom.participants.map((participant) =>
-          participant._id.toString(),
-        ) || [];
-
-      const activeChatUsers = activeUsers.get(chatRoomId);
-
-      interlocutorIds.forEach((interlocutorId) => {
-        if (activeChatUsers?.has(interlocutorId)) {
-          return;
-        }
-
-        this.postInterlocutorServiceMessage({
-          userIds: [interlocutorId],
-          event: socketMessageNamespaces.CHAT_ROOM_MESSAGE,
-          data: messageObject,
-          activeUsers: activeUsers,
-          io,
-        });
-      });
 
       io.to(chatRoomId).emit(
         socketMessageNamespaces.CHAT_ROOM_MESSAGE,
