@@ -16,7 +16,7 @@ export class ChatRoom {
   chat_name: string;
 
   @Prop({
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user_profile' }],
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: UserProfile.name }],
   })
   participants: UserProfile[];
 

@@ -14,17 +14,14 @@ import { Model } from 'mongoose';
 import { strings } from '../strings';
 import { ChatCacheService } from './chat-cache.service';
 import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
-import { UserProfile } from 'src/user/schemas/user.schema';
 
 @Injectable()
 export class MessageService {
   constructor(
     @InjectModel(ChatRoom.name)
-    private ChatRoomModel: Model<ChatRoom>,
-    private readonly chatCacheService: ChatCacheService,
-    @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
+    private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
-    @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
+    private readonly chatCacheService: ChatCacheService,
   ) {}
 
   async postRoomMessage({
@@ -41,7 +38,8 @@ export class MessageService {
     try {
       const { chatRoomId, message, senderId, senderName } = dto;
 
-      const currentChatRoom = await this.ChatRoomModel.findById(chatRoomId);
+      const currentChatRoom =
+        await this.chatCacheService.getChatRoomWithCache(chatRoomId);
 
       if (!currentChatRoom) {
         const errorMessage = strings.chatRoomsNotFound.replace(

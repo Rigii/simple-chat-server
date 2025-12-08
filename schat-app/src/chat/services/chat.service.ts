@@ -7,28 +7,34 @@ import { Namespace, Socket } from 'socket.io';
 import { chatRoomEmitEvents } from '../constants/chat.events';
 import { strings } from '../strings';
 import { UserProfile } from 'src/user/schemas/user.schema';
+import { ChatCacheService } from './chat-cache.service';
 
 @Injectable()
 export class ChatService implements OnModuleInit {
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
+    private readonly chatCacheService: ChatCacheService,
   ) {}
 
   private async createDefaultChatRoomDBRecords() {
     try {
-      const existingRooms = await this.chatRoomModel.find().exec();
+      const existingRooms = await this.chatRoomModel
+        .find()
+        .populate('participants')
+        .lean()
+        .exec();
 
       if (existingRooms.length) {
+        for (const room of existingRooms) {
+          await this.chatCacheService.storeChatRoomWithCache(room);
+        }
         return;
       }
 
-      const roomPromises = MOCKED_CHAT_ROOMS.map((room) => {
+      MOCKED_CHAT_ROOMS.map((room) => {
         return this.chatRoomModel.create({ chat_name: room.chat_name });
       });
-
-      await Promise.all(roomPromises);
-
       return;
     } catch (error) {
       console.error('Error initializing chat rooms:', error);
@@ -37,15 +43,6 @@ export class ChatService implements OnModuleInit {
 
   async onModuleInit() {
     this.createDefaultChatRoomDBRecords();
-  }
-
-  async getAllDefaultChatRooms(): Promise<ChatRoom[]> {
-    const roomNames = MOCKED_CHAT_ROOMS.map((room) => room.chat_name);
-    return await this.chatRoomModel
-      .find({
-        chat_name: { $in: roomNames },
-      })
-      .exec();
   }
 
   getCurrentUserAccountData = async (userId: string) => {
@@ -92,7 +89,7 @@ export class ChatService implements OnModuleInit {
     io: Namespace;
   }) => {
     try {
-      const chatRooms = await this.getAllDefaultChatRooms();
+      const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
       for (const room of chatRooms) {
         await this.handleJoinChat({
           client,
@@ -123,10 +120,9 @@ export class ChatService implements OnModuleInit {
     dto: { userId: string };
   }) {
     try {
-      const chatRooms = await this.getAllDefaultChatRooms();
+      const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
       const chatIds = chatRooms.map((room) => room._id.toString());
 
-      /* Bind User profile record with chat record */
       for (const chatId of chatIds) {
         await this.chatRoomModel.findByIdAndUpdate(
           chatId,
@@ -179,8 +175,7 @@ export class ChatService implements OnModuleInit {
         }
       }
 
-      const chatRooms = await this.getAllDefaultChatRooms();
-
+      const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
       for (const room of chatRooms) {
         io.to(room._id.toString()).emit(
           chatRoomEmitEvents.PARTICIPANT_DISCONNECTED,
@@ -219,7 +214,7 @@ export class ChatService implements OnModuleInit {
     nickname: string;
     io: Namespace;
   }) {
-    const chatRooms = await this.getAllDefaultChatRooms();
+    const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
 
     for (const room of chatRooms) {
       await client.leave(room._id.toString());
