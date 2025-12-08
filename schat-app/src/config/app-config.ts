@@ -1,8 +1,7 @@
 import 'dotenv/config';
 
 export const AppConfig = () => ({
-  port: Number(process.env.PORT),
-  jwtSecret: process.env.JWT_SECRET,
+  port: Number(process.env.APP_PORT),
   mongo_database: {
     uri: process.env.DB_MONGO_URI,
     retryAttempts: 10,
@@ -18,7 +17,6 @@ export const AppConfig = () => ({
   redis: {
     host: process.env.REDIS_HOST,
     port: process.env.REDIS_PORT,
-    password: process.env.REDIS_PASSWORD,
   },
   encryptionMasterKey: process.env.ENCRYPTION_MASTER_KEY,
 });

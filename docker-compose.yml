@@ -1,10 +1,26 @@
 version: "3.8"
 
 services:
+  app:
+    build: ./schat-app
+    container_name: ${PROJECT_NAME}
+    ports:
+      - "5001:5001"
+      - "9229:9229"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DB_MONGO_URI: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:${MONGO_PORT}/${MONGO_DATABASE}?authSource=admin
+    command: npm run start:dev
+
   mongodb:
-    image: mongo:6-alpine
+    image: mongo:latest
     container_name: ${PROJECT_NAME}-mongodb
-    restart: unless-stopped
     ports:
       - "${MONGO_PORT}:27017"
     env_file: .env
@@ -16,87 +32,40 @@ services:
       - ${MONGO_DATA_VOLUME}:/data/db
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 30s
+      interval: 10s
       timeout: 10s
-      retries: 3
-
-  mongodb-compass:
-  image: mongo:6-alpine
-  container_name: ${PROJECT_NAME}-compass
-  restart: unless-stopped
-  ports:
-    - "${MONGO_COMPASS_PORT}:27017"
-  env_file: .env
-  environment:
-    MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-    MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-  depends_on:
-    - mongodb
-
-  redis:
-    image: redis:7-alpine
-    container_name: ${PROJECT_NAME}-redis
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT}:6379"
-    env_file: .env
-    command: >
-      redis-server  --requirepass ${REDIS_PASSWORD} --appendonly yes --maxmemory ${REDIS_MAXMEMORY} --maxmemory-policy ${REDIS_MEMORY_POLICY}
-    volumes:
-      - ${REDIS_DATA_VOLUME}:/data
+      retries: 5
 
   mongo-express:
-    image: mongo-express:1-alpine
+    image: mongo-express:latest
     container_name: ${PROJECT_NAME}-mongo-express
     restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
     ports:
       - "${MONGO_EXPRESS_PORT}:8081"
     env_file: .env
     environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
-      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/
       ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME}
       ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
 
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: ${PROJECT_NAME}-redis-commander
-    restart: unless-stopped
+  redis:
+    image: redis:alpine
+    container_name: redis
     ports:
-      - "${REDIS_COMMANDER_PORT}:8081"
-    env_file: .env
-    environment:
-      REDIS_HOSTS: local:redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-
-  app:
-    build:
-      context: ./nest-app
-      target: development
-    container_name: ${PROJECT_NAME}-app
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT}:3000"
-      - "9229:9229"
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=development
-      - MONGODB_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DATABASE}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - "6379:6379"
     volumes:
-      - ./nest-app:/usr/src/app
-      - /usr/src/app/node_modules
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: npm run start:dev
+      - ${REDIS_DATA_VOLUME}:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  ${MONGO_DATA_VOLUME}:
-  ${REDIS_DATA_VOLUME}:
+  mongodb_data:
+  redis_data:

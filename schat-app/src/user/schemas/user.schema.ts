@@ -1,9 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { TUserRole } from '../types';
+import { USER_ACCOUNT_COLLECTIONS } from '../constants/user.constants';
 
 export type UserProfileDocument = HydratedDocument<UserProfile>;
 
-@Schema({ collection: 'user_profile' })
+@Schema({ collection: USER_ACCOUNT_COLLECTIONS.userProfile })
 export class UserProfile {
   _id: Types.ObjectId;
 
@@ -11,10 +13,10 @@ export class UserProfile {
   email: string;
 
   @Prop()
-  nikName: string;
+  nickname: string;
 
-  @Prop({ default: false })
-  role: boolean;
+  @Prop({ default: 'user' })
+  role: TUserRole;
 }
 
 export const UserProfileSchema = SchemaFactory.createForClass(UserProfile);

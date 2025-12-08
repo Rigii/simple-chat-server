@@ -1,9 +1,10 @@
 import { IsNotEmpty } from 'class-validator';
+import { TUserRole } from '../types';
 
 export class CreateUserDto {
   @IsNotEmpty()
   email: string;
   @IsNotEmpty()
-  nikName: string;
-  role: string;
+  nickname: string;
+  role: TUserRole;
 }
