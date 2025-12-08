@@ -4,3 +4,9 @@ export class PostRoomMessageDto {
   senderId: string;
   senderName: string;
 }
+
+export class GetRoomMessagesDto {
+  chatRoomId: string;
+  userId: string;
+  chunkLimit?: number;
+}

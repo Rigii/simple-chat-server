@@ -4,13 +4,17 @@ import {
   roomMessageStatusEvent,
   socketMessageNamespaces,
 } from '../constants/chat.events';
-import { PostRoomMessageDto } from '../dto/room-message.dto';
+import {
+  GetRoomMessagesDto,
+  PostRoomMessageDto,
+} from '../dto/room-message.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { Model } from 'mongoose';
 import { strings } from '../strings';
 import { ChatCacheService } from './chat-cache.service';
-import { ChatRoom } from '../schemas/chat-room.schema';
+import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
+import { UserProfile } from 'src/user/schemas/user.schema';
 
 @Injectable()
 export class MessageService {
@@ -18,7 +22,9 @@ export class MessageService {
     @InjectModel(ChatRoom.name)
     private ChatRoomModel: Model<ChatRoom>,
     private readonly chatCacheService: ChatCacheService,
+    @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
+    @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
   ) {}
 
   async postRoomMessage({
@@ -34,8 +40,6 @@ export class MessageService {
   }): Promise<RoomMessage | void> {
     try {
       const { chatRoomId, message, senderId, senderName } = dto;
-      console.log(7777777, dto);
-      console.log(8888888, chatRoomId);
 
       const currentChatRoom = await this.ChatRoomModel.findById(chatRoomId);
 
@@ -65,8 +69,6 @@ export class MessageService {
           senderId,
           chatRoomId,
         );
-
-        console.log(3333333, chatRoomId);
 
         client.emit(roomMessageStatusEvent.ROOM_MESSAGE_FAILED, errorMessage);
         return;
@@ -114,7 +116,7 @@ export class MessageService {
         messageObject,
       );
 
-      return;
+      return savedMessage;
     } catch (error) {
       console.error(strings.postChatRoomMessageError, error);
       client.emit(
@@ -122,6 +124,33 @@ export class MessageService {
         strings.postChatRoomMessageError,
       );
     }
+  }
+
+  async getRoomMessages(
+    getRoomMessagesDto: GetRoomMessagesDto,
+  ): Promise<RoomMessage[]> {
+    /* chect is userId part of the chat room */
+
+    const isParticipant = await this.chatRoomModel.findByIdAndUpdate(
+      getRoomMessagesDto.chatRoomId,
+      { $addToSet: { participants: getRoomMessagesDto.userId } },
+      { new: true },
+    );
+
+    if (!isParticipant) {
+      throw new Error(
+        strings.userNotParticipantOfChatRoom
+          .replace('${userId}', getRoomMessagesDto.userId)
+          .replace('${roomId}', getRoomMessagesDto.chatRoomId),
+      );
+    }
+
+    const limit = getRoomMessagesDto.chunkLimit ?? 50;
+    return this.RoomMessageModel.find({
+      chatRoomId: getRoomMessagesDto.chatRoomId,
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit);
   }
 
   async postInterlocutorServiceMessage({

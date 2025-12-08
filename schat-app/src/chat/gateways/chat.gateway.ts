@@ -76,7 +76,6 @@ export class ChatGateway {
 
   @SubscribeMessage(socketMessageNamespaces.CHAT_ROOM_MESSAGE)
   handlePostRoomMessage(client: Socket, payload: any) {
-    console.log(222222, payload.chatRoomId);
     this.messageService.postRoomMessage({
       dto: payload as PostRoomMessageDto,
       client,

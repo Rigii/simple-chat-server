@@ -8,6 +8,7 @@ import { ChatRoom, ChatRoomSchema } from './schemas/chat-room.schema';
 import { UserProfile, UserProfileSchema } from 'src/user/schemas/user.schema';
 import { RoomMessage, RoomMessageSchema } from './schemas/room-message.schema';
 import { RedisService } from 'src/redis/redis.service';
+import { ChatController } from './controllers/chat.controller';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RedisService } from 'src/redis/redis.service';
       { name: RoomMessage.name, schema: RoomMessageSchema },
     ]),
   ],
+  controllers: [ChatController],
   providers: [
     ChatGateway,
     ChatService,
