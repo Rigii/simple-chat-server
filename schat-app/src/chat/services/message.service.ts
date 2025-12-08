@@ -21,29 +21,6 @@ export class MessageService {
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
   ) {}
 
-  postNotificationMessageToInterlocutors({
-    userIds,
-    event,
-    data,
-    activeUsers,
-    io,
-  }: {
-    userIds: string[];
-    event: string;
-    data: any;
-    activeUsers: Map<string, Set<string>>;
-    io: Namespace;
-  }) {
-    userIds.forEach((userId) => {
-      const sockets = activeUsers.get(userId);
-      if (sockets) {
-        sockets.forEach((socketId) => {
-          io.to(socketId).emit(event, data);
-        });
-      }
-    });
-  }
-
   async postRoomMessage({
     dto,
     client,
@@ -57,8 +34,9 @@ export class MessageService {
   }): Promise<RoomMessage | void> {
     try {
       const { chatRoomId, message, senderId, senderName } = dto;
+      console.log(7777777, dto);
+      console.log(8888888, chatRoomId);
 
-      /* Check if the user is in the chat room. Update cache if he's not */
       const currentChatRoom = await this.ChatRoomModel.findById(chatRoomId);
 
       if (!currentChatRoom) {
@@ -67,7 +45,29 @@ export class MessageService {
           chatRoomId,
         );
 
-        console.error('Chat room not found');
+        console.error(strings.chatRoomsNotFound, chatRoomId);
+        client.emit(roomMessageStatusEvent.ROOM_MESSAGE_FAILED, errorMessage);
+        return;
+      }
+
+      /* Check if user related to the chatroom */
+      const isParticipant = currentChatRoom.participants.some((participant) =>
+        participant._id.toString().includes(senderId),
+      );
+
+      if (!isParticipant) {
+        const errorMessage = strings.userNotParticipantOfChatRoom
+          .replace('${userId}', senderId)
+          .replace('${roomId}', chatRoomId);
+
+        console.error(
+          strings.userNotParticipantOfChatRoom,
+          senderId,
+          chatRoomId,
+        );
+
+        console.log(3333333, chatRoomId);
+
         client.emit(roomMessageStatusEvent.ROOM_MESSAGE_FAILED, errorMessage);
         return;
       }
@@ -82,12 +82,12 @@ export class MessageService {
       });
 
       const savedMessage = await createdRoomMessage.save();
-      const response = {
+      const messageObject = {
         id: savedMessage._id.toString(),
         ...savedMessage.toObject(),
       };
 
-      /* If the user not awailable in the chatroom, send message to his private channel */
+      /* If the user not available in the chatroom, send message to his private channel */
       const interlocutorIds =
         currentChatRoom.participants.map((participant) =>
           participant._id.toString(),
@@ -103,7 +103,7 @@ export class MessageService {
         this.postInterlocutorServiceMessage({
           userIds: [interlocutorId],
           event: socketMessageNamespaces.CHAT_ROOM_MESSAGE,
-          data: response,
+          data: messageObject,
           activeUsers: activeUsers,
           io,
         });
@@ -111,12 +111,12 @@ export class MessageService {
 
       io.to(chatRoomId).emit(
         socketMessageNamespaces.CHAT_ROOM_MESSAGE,
-        response,
+        messageObject,
       );
 
       return;
     } catch (error) {
-      console.error('Error while posting message', error);
+      console.error(strings.postChatRoomMessageError, error);
       client.emit(
         roomMessageStatusEvent.ROOM_MESSAGE_FAILED,
         strings.postChatRoomMessageError,

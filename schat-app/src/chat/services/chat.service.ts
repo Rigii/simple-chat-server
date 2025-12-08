@@ -6,17 +6,23 @@ import { Model } from 'mongoose';
 import { Namespace, Socket } from 'socket.io';
 import { chatRoomEmitEvents } from '../constants/chat.events';
 import { strings } from '../strings';
+import { UserProfile } from 'src/user/schemas/user.schema';
 
 @Injectable()
 export class ChatService implements OnModuleInit {
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
-    // @InjectModel(UserProfile.name)
-    // private userProfileModel: Model<UserProfileDocument>,
+    @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
   ) {}
 
   private async createDefaultChatRoomDBRecords() {
     try {
+      const existingRooms = await this.chatRoomModel.find().exec();
+
+      if (existingRooms.length) {
+        return;
+      }
+
       const roomPromises = MOCKED_CHAT_ROOMS.map((room) => {
         return this.chatRoomModel.create({ chat_name: room.chat_name });
       });
@@ -28,32 +34,6 @@ export class ChatService implements OnModuleInit {
       console.error('Error initializing chat rooms:', error);
     }
   }
-
-  // private async getUserFromChat({
-  //   roomId,
-  //   userId,
-  // }: {
-  //   roomId: string;
-  //   userId: string;
-  // }): Promise<UserProfile | null> {
-  //   const chatRoom = await this.chatRoomModel
-  //     .findOne({
-  //       _id: roomId,
-  //       participants: userId,
-  //     })
-  //     .populate({
-  //       path: 'participants',
-  //       match: { _id: userId },
-  //       select: 'nickname email',
-  //     })
-  //     .exec();
-
-  //   if (!chatRoom || chatRoom.participants.length === 0) {
-  //     return null;
-  //   }
-
-  //   return chatRoom.participants[0]; // Вернет только указанного пользователя
-  // }
 
   async onModuleInit() {
     this.createDefaultChatRoomDBRecords();
@@ -68,16 +48,26 @@ export class ChatService implements OnModuleInit {
       .exec();
   }
 
+  getCurrentUserAccountData = async (userId: string) => {
+    return await this.userProfileModel.findById(userId).exec();
+  };
+
+  getCurrentUser = async (userId: string) => {
+    return await this.userProfileModel.findById(userId).exec();
+  };
+
   async addInterlocutorToActiveUsers({
     clientId,
     userId,
+    nickname,
     activeUsers,
   }: {
     clientId: string;
     userId: string;
+    nickname: string;
     activeUsers: Map<string, Set<string>>;
   }) {
-    console.log(`User ${clientId} is active.`);
+    console.log(`User ${nickname} ${clientId} is active.`);
 
     if (!activeUsers.has(userId)) {
       activeUsers.set(userId, new Set());
@@ -86,49 +76,38 @@ export class ChatService implements OnModuleInit {
     if (activeUsers.get(userId).has(clientId)) {
       return;
     }
-
+    // Add clientId (device id) to the set of active client devices for the user
     activeUsers.get(userId).add(clientId);
   }
 
-  handleJoinSingleUserDefaultChatRooms = async ({
+  handleJoinUserDefaultChatRooms = async ({
     client,
     userId,
-    roomId,
-    activeUsers,
+    nickname,
     io,
   }: {
     client: Socket;
     userId: string;
-    roomId: string;
-    activeUsers: Map<string, Set<string>>;
+    nickname: string;
     io: Namespace;
   }) => {
-    console.log(11111112221, userId, roomId);
-    console.log(22222222, activeUsers);
-
     try {
       const chatRooms = await this.getAllDefaultChatRooms();
-      chatRooms.map(async (room: ChatRoom) => {
+      for (const room of chatRooms) {
         await this.handleJoinChat({
           client,
           dto: { userId },
-          activeUsers,
         });
 
-        io.to(roomId).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
-          message: strings.joinChatSuccess.replace(
-            '${chatName}',
-            room.chat_name,
-          ),
+        io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
+          message: strings.joinChatSuccess
+            .replace('${chatName}', room.chat_name)
+            .replace('${userNickname}', nickname),
+          data: { roomId: room._id.toString(), userId, nickname },
         });
 
-        client.emit(chatRoomEmitEvents.JOIN_CHAT_SUCCESS, {
-          message: strings.joinChatSuccess.replace(
-            '${chatName}',
-            room.chat_name,
-          ),
-        });
-      });
+        console.log(`User ${nickname} joined room: ${room._id.toString()}`);
+      }
     } catch (error) {
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
         message: error.message,
@@ -136,65 +115,25 @@ export class ChatService implements OnModuleInit {
     }
   };
 
-  async roomsDisconnectInterlocutor({
-    clientId,
-    userId,
-    activeUsers,
-    io,
-  }: {
-    clientId: string;
-    userId: string;
-    activeUsers: Map<string, Set<string>>;
-    io: Namespace;
-  }) {
-    try {
-      if (activeUsers.has(userId)) {
-        activeUsers.get(userId).delete(clientId);
-
-        if (activeUsers.get(userId).size === 0) {
-          activeUsers.delete(userId);
-          console.log(`User ${userId} is no longer active.`);
-        }
-      }
-
-      const roomsWithCurrentUser = Array.from(activeUsers.entries()).filter(
-        ([, sockets]) => sockets.has(userId),
-      );
-
-      for (const [roomId, sockets] of roomsWithCurrentUser) {
-        sockets.forEach((socketId) => {
-          io.to(socketId).emit(chatRoomEmitEvents.USER_LEFT_CHAT, {
-            userId,
-            room: roomId,
-          });
-        });
-      }
-    } catch (error) {
-      console.error(strings.userDisconnectingError, error);
-    }
-  }
-
   async handleJoinChat({
     client,
     dto,
-    activeUsers,
   }: {
     client: Socket;
     dto: { userId: string };
-    activeUsers: Map<string, Set<string>>;
   }) {
-    const { userId } = dto;
-
     try {
       const chatRooms = await this.getAllDefaultChatRooms();
       const chatIds = chatRooms.map((room) => room._id.toString());
 
-      chatIds.forEach((chatId) => {
-        if (!activeUsers.has(chatId)) {
-          activeUsers.set(userId, new Set());
-        }
-        activeUsers.get(chatId).add(userId);
-      });
+      /* Bind User profile record with chat record */
+      for (const chatId of chatIds) {
+        await this.chatRoomModel.findByIdAndUpdate(
+          chatId,
+          { $addToSet: { participants: dto.userId } },
+          { new: true },
+        );
+      }
 
       client.join(chatIds);
     } catch (error) {
@@ -202,6 +141,104 @@ export class ChatService implements OnModuleInit {
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
         message: error.message,
       });
+    }
+  }
+
+  async roomsDisconnectInterlocutor({
+    client,
+    userId,
+    nickname,
+    activeUsers,
+    io,
+  }: {
+    client: Socket;
+    userId: string;
+    nickname: string;
+    activeUsers: Map<string, Set<string>>;
+    io: Namespace;
+  }) {
+    try {
+      if (activeUsers.has(userId)) {
+        const userConnections = activeUsers.get(userId);
+        userConnections.delete(client.id);
+
+        if (userConnections.size === 0) {
+          activeUsers.delete(userId);
+          console.log(
+            strings.userHasNoMoreActiveConnections
+              .replace('${nickname}', nickname)
+              .replace('${userId}', userId),
+          );
+        } else {
+          console.log(
+            strings.userHasOtherActiveConnections
+              .replace('${nickname}', nickname)
+              .replace('${userId}', userId)
+              .replace('${connectionsCount}', userConnections.size.toString()),
+          );
+        }
+      }
+
+      const chatRooms = await this.getAllDefaultChatRooms();
+
+      for (const room of chatRooms) {
+        io.to(room._id.toString()).emit(
+          chatRoomEmitEvents.PARTICIPANT_DISCONNECTED,
+          {
+            message: strings.disconnectChatSuccess
+              .replace('${chatName}', room.chat_name)
+              .replace('${userNickname}', nickname),
+            data: { roomId: room._id.toString(), userId, nickname },
+          },
+        );
+
+        console.log(`User ${nickname} left room: ${room._id.toString()}`);
+      }
+    } catch (error) {
+      console.error(strings.userDisconnectingError, error);
+
+      // Fallback cleanup
+      if (activeUsers.has(userId)) {
+        const userConnections = activeUsers.get(userId);
+        userConnections.delete(client.id);
+        if (userConnections.size === 0) {
+          activeUsers.delete(userId);
+        }
+      }
+    }
+  }
+
+  async userLeftChat({
+    client,
+    userId,
+    nickname,
+    io,
+  }: {
+    client: Socket;
+    userId: string;
+    nickname: string;
+    io: Namespace;
+  }) {
+    const chatRooms = await this.getAllDefaultChatRooms();
+
+    for (const room of chatRooms) {
+      await client.leave(room._id.toString());
+
+      /* Unbind User profile record with chat record */
+      await this.chatRoomModel.findByIdAndUpdate(
+        room._id.toString(),
+        { $pull: { participants: userId } },
+        { new: true },
+      );
+
+      io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_LEFT_CHAT, {
+        message: strings.leaveChatSuccess
+          .replace('${chatName}', room.chat_name)
+          .replace('${userNickname}', nickname),
+        data: { roomId: room._id.toString(), userId, nickname },
+      });
+
+      console.log(`User ${nickname} left room: ${room._id.toString()}`);
     }
   }
 }
