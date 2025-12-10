@@ -70,7 +70,13 @@ export class MessageService {
         client.emit(roomMessageStatusEvent.ROOM_MESSAGE_FAILED, errorMessage);
         return;
       }
-
+      console.log(1111, {
+        participantId: participantId,
+        nickname: nickname,
+        message,
+        chatRoomId,
+        isAdmin: false,
+      });
       /* Save message to the Mongo DB */
       const createdRoomMessage = await new this.RoomMessageModel({
         participantId: participantId,
@@ -118,12 +124,10 @@ export class MessageService {
       );
     }
 
-    const limit = getRoomMessagesDto.chunkLimit ?? 50;
+    const limit = getRoomMessagesDto.chunkLimit ?? 250;
     return this.RoomMessageModel.find({
       chatRoomId: getRoomMessagesDto.chatRoomId,
-    })
-      .sort({ createdAt: 1 })
-      .limit(limit);
+    }).limit(limit);
   }
 
   async postInterlocutorServiceMessage({
