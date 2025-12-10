@@ -1,7 +1,7 @@
 export class PostRoomMessageDto {
   chatRoomId: string;
   message: string;
-  senderId: string;
+  participantId: string;
   nickname: string;
 }
 

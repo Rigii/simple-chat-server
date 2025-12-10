@@ -35,7 +35,7 @@ export class MessageService {
     io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
   }): Promise<RoomMessage | void> {
     try {
-      const { chatRoomId, message, senderId, nickname } = payload;
+      const { chatRoomId, message, participantId, nickname } = payload;
 
       const currentChatRoom =
         await this.chatCacheService.getChatRoomWithCache(chatRoomId);
@@ -53,17 +53,17 @@ export class MessageService {
 
       /* Check if user related to the chatroom */
       const isParticipant = currentChatRoom.participants.some((participant) =>
-        participant._id.toString().includes(senderId),
+        participant._id.toString().includes(participantId),
       );
 
       if (!isParticipant) {
         const errorMessage = strings.userNotParticipantOfChatRoom
-          .replace('${userId}', senderId)
+          .replace('${userId}', participantId)
           .replace('${roomId}', chatRoomId);
 
         console.error(
           strings.userNotParticipantOfChatRoom,
-          senderId,
+          participantId,
           chatRoomId,
         );
 
@@ -73,7 +73,7 @@ export class MessageService {
 
       /* Save message to the Mongo DB */
       const createdRoomMessage = await new this.RoomMessageModel({
-        participantId: senderId,
+        participantId: participantId,
         nickname: nickname,
         message,
         chatRoomId,
