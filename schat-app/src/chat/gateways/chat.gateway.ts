@@ -46,7 +46,7 @@ export class ChatGateway {
       activeUsers: this.activeUsers,
     });
 
-    this.chatService.handleJoinUserDefaultChatRooms({
+    this.chatService.handleJoinUserRooms({
       client,
       userId,
       nickname: currentUser.nickname,

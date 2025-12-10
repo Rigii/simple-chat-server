@@ -77,7 +77,7 @@ export class ChatService implements OnModuleInit {
     activeUsers.get(userId).add(clientId);
   }
 
-  handleJoinUserDefaultChatRooms = async ({
+  handleJoinUserRooms = async ({
     client,
     userId,
     nickname,
@@ -89,10 +89,13 @@ export class ChatService implements OnModuleInit {
     io: Namespace;
   }) => {
     try {
-      const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
-      for (const room of chatRooms) {
+      /* TODO:// AllChatRooms for the testing purposes. Will be only users rooms */
+      const userChatRooms =
+        await this.chatCacheService.getAllChatRoomsFromCache();
+      for (const room of userChatRooms) {
         await this.handleJoinChat({
           client,
+          room,
           dto: { userId },
         });
 
@@ -119,24 +122,21 @@ export class ChatService implements OnModuleInit {
 
   async handleJoinChat({
     client,
+    room,
     dto,
   }: {
     client: Socket;
+    room: ChatRoom;
     dto: { userId: string };
   }) {
     try {
-      const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
-      const chatIds = chatRooms.map((room) => room._id.toString());
+      await this.chatRoomModel.findByIdAndUpdate(
+        room._id || '',
+        { $addToSet: { participants: dto.userId } },
+        { new: true },
+      );
 
-      for (const chatId of chatIds) {
-        await this.chatRoomModel.findByIdAndUpdate(
-          chatId,
-          { $addToSet: { participants: dto.userId } },
-          { new: true },
-        );
-      }
-
-      client.join(chatIds);
+      client.join([room._id]);
     } catch (error) {
       console.error(strings.joinChatError, error);
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
