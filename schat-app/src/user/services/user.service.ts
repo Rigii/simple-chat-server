@@ -11,14 +11,26 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const result = await this.UserProfileModel.create(createUserDto);
-    const userObject = result.toObject();
+    try {
+      const presentedResult = await this.UserProfileModel.findOne({
+        email: createUserDto.email,
+      });
 
-    return {
-      _id: userObject._id.toString(),
-      email: userObject.email,
-      nickname: userObject.nickname,
-      role: userObject.role,
-    };
+      if (presentedResult?.toObject()) {
+        return presentedResult;
+      }
+
+      const result = await this.UserProfileModel.create(createUserDto);
+      const userObject = result?.toObject();
+
+      return {
+        _id: userObject._id.toString(),
+        email: userObject.email,
+        nickname: userObject.nickname,
+        role: userObject.role || 'user',
+      };
+    } catch (error) {
+      console.error('User Access Error');
+    }
   }
 }

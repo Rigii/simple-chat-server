@@ -6,6 +6,5 @@ export class CreateUserDto {
   email: string;
   @IsNotEmpty()
   nickname: string;
-  role: TUserRole;
-  password: string;
+  role?: TUserRole;
 }
