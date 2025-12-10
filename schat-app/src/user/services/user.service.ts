@@ -10,7 +10,15 @@ export class UserService {
     @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    this.UserProfileModel.create(createUserDto);
+  async create(createUserDto: CreateUserDto) {
+    const result = await this.UserProfileModel.create(createUserDto);
+    const userObject = result.toObject();
+
+    return {
+      _id: userObject._id.toString(),
+      email: userObject.email,
+      nickname: userObject.nickname,
+      role: userObject.role,
+    };
   }
 }

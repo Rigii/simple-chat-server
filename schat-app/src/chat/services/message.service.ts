@@ -25,17 +25,17 @@ export class MessageService {
   ) {}
 
   async postRoomMessage({
-    dto,
+    payload,
     client,
     io,
   }: {
-    dto: PostRoomMessageDto;
+    payload: PostRoomMessageDto;
     client: Socket;
     activeUsers: Map<string, Set<string>>;
     io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
   }): Promise<RoomMessage | void> {
     try {
-      const { chatRoomId, message, senderId, senderName } = dto;
+      const { chatRoomId, message, senderId, senderName } = payload;
 
       const currentChatRoom =
         await this.chatCacheService.getChatRoomWithCache(chatRoomId);
@@ -104,8 +104,6 @@ export class MessageService {
   async getRoomMessages(
     getRoomMessagesDto: GetRoomMessagesDto,
   ): Promise<RoomMessage[]> {
-    /* chect is userId part of the chat room */
-
     const isParticipant = await this.chatRoomModel.findByIdAndUpdate(
       getRoomMessagesDto.chatRoomId,
       { $addToSet: { participants: getRoomMessagesDto.userId } },

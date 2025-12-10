@@ -7,4 +7,5 @@ export class CreateUserDto {
   @IsNotEmpty()
   nickname: string;
   role: TUserRole;
+  password: string;
 }

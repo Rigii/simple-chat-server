@@ -6,7 +6,6 @@ export const chatRoomEmitEvents = {
   NEW_ROOM_PARTICIPANT_ADDED: 'new_room_participant_added',
   PARTICIPANT_DISCONNECTED: 'participant_disconnected',
   ADD_CHAT_PARTICIPANTS_ERROR: 'add_chat_participants_error',
-  CHAT_ROOM_MESSAGE: 'chat_room_message',
   USER_CHAT_ROOM_DELETED: 'user_chat_room_deleted',
 };
 
@@ -17,10 +16,14 @@ export const socketMessageNamespaces = {
   ADD_CHAT_PARTICIPIANTS: 'add_chat_participiants',
   FIND_ALL_USER_CHAT_ROOMS: 'find_all_user_chat_account',
   DELETE_CHAT_ROOM: 'delete_chat_room',
-  JOIN_CHAT: 'join_chat',
   DECLINE_CHAT: 'decline_chat',
   CHAT_ROOM_MESSAGE: 'chat_room_message',
+};
+
+export const incommingEvents = {
+  JOIN_CHAT: 'join_chat',
   LEAVE_CHAT: 'leave_chat',
+  CHAT_ROOM_MESSAGE: 'chat_room_message',
 };
 
 export const roomMessageStatusEvent = {

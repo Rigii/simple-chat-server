@@ -100,7 +100,12 @@ export class ChatService implements OnModuleInit {
           message: strings.joinChatSuccess
             .replace('${chatName}', room.chat_name)
             .replace('${userNickname}', nickname),
-          data: { roomId: room._id.toString(), userId, nickname },
+          data: {
+            roomId: room._id.toString(),
+            roomName: room.chat_name,
+            userId,
+            nickname,
+          },
         });
 
         console.log(`User ${nickname} joined room: ${room._id.toString()}`);

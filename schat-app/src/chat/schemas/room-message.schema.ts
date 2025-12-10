@@ -30,6 +30,9 @@ export class RoomMessage {
   @Prop()
   isAdmin: boolean;
 
+  @Prop()
+  message: string;
+
   created: Date;
   updated: Date;
 

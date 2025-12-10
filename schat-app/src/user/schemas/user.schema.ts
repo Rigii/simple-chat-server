@@ -15,6 +15,13 @@ export class UserProfile {
   @Prop()
   nickname: string;
 
+  @Prop({
+    required: true,
+    select: false, // Don't include password in queries by default
+    minlength: 6,
+  })
+  password: string;
+
   @Prop({ default: 'user' })
   role: TUserRole;
 }

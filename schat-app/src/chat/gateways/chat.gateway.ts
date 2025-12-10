@@ -6,7 +6,7 @@ import {
 import { ChatService } from '../services/chat.service';
 import { Namespace, Socket } from 'socket.io';
 import { UseFilters } from '@nestjs/common';
-import { socketMessageNamespaces } from '../constants/chat.events';
+import { incommingEvents } from '../constants/chat.events';
 import { PostRoomMessageDto } from '../dto/room-message.dto';
 import { WsErrorFilter } from 'shared/ws-error.filter';
 import { MessageService } from '../services/message.service';
@@ -74,10 +74,10 @@ export class ChatGateway {
     });
   }
 
-  @SubscribeMessage(socketMessageNamespaces.CHAT_ROOM_MESSAGE)
-  handlePostRoomMessage(client: Socket, payload: any) {
+  @SubscribeMessage(incommingEvents.CHAT_ROOM_MESSAGE)
+  handlePostRoomMessage(client: Socket, payload: PostRoomMessageDto) {
     this.messageService.postRoomMessage({
-      dto: payload as PostRoomMessageDto,
+      payload,
       client,
       activeUsers: this.activeUsers,
       io: this.io,
