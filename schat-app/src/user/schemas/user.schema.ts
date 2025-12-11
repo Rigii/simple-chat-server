@@ -15,6 +15,9 @@ export class UserProfile {
   @Prop()
   nickname: string;
 
+  @Prop({ default: [] })
+  rooms: string[];
+
   @Prop({ default: 'user' })
   role: TUserRole;
 }

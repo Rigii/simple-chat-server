@@ -2,13 +2,13 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { CHAT_ROUTES } from '../constants/chat.routes';
 import { MessageService } from '../services/message.service';
 import { GetRoomMessagesDto } from '../dto/room-message.dto';
-import { ChatCacheService } from '../services/chat-cache.service';
+import { ChatDetailsService } from '../services/chat-details.service';
 
 @Controller(CHAT_ROUTES.chat)
 export class ChatController {
   constructor(
     private readonly messageService: MessageService,
-    private readonly chatCacheService: ChatCacheService,
+    private readonly chatDetailsService: ChatDetailsService,
   ) {}
 
   @Post(CHAT_ROUTES.getChatMessages)
@@ -18,6 +18,11 @@ export class ChatController {
 
   @Post(CHAT_ROUTES.getAllChatRooms)
   getAllChatRooms() {
-    return this.chatCacheService.getAllChatRoomsFromCache();
+    return this.chatDetailsService.getAllChatRoomsFromCache();
+  }
+
+  @Post(CHAT_ROUTES.getRoomDetails)
+  getRoomDetails(@Body() getRoomMessagesDto: GetRoomMessagesDto) {
+    return this.chatDetailsService.getRoomData(getRoomMessagesDto);
   }
 }

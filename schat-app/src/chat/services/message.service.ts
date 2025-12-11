@@ -12,7 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { Model } from 'mongoose';
 import { strings } from '../strings';
-import { ChatCacheService } from './chat-cache.service';
+import { ChatDetailsService } from './chat-details.service';
 import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class MessageService {
     @InjectModel(ChatRoom.name)
     private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
-    private readonly chatCacheService: ChatCacheService,
+    private readonly chatDetailsService: ChatDetailsService,
   ) {}
 
   async postRoomMessage({
@@ -31,14 +31,13 @@ export class MessageService {
   }: {
     payload: PostRoomMessageDto;
     client: Socket;
-    activeUsers: Map<string, Set<string>>;
     io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
   }): Promise<RoomMessage | void> {
     try {
       const { chatRoomId, message, participantId, nickname } = payload;
 
       const currentChatRoom =
-        await this.chatCacheService.getChatRoomWithCache(chatRoomId);
+        await this.chatDetailsService.getChatRoomWithCache(chatRoomId);
 
       if (!currentChatRoom) {
         const errorMessage = strings.chatRoomsNotFound.replace(
@@ -70,13 +69,6 @@ export class MessageService {
         client.emit(roomMessageStatusEvent.ROOM_MESSAGE_FAILED, errorMessage);
         return;
       }
-      console.log(1111, {
-        participantId: participantId,
-        nickname: nickname,
-        message,
-        chatRoomId,
-        isAdmin: false,
-      });
       /* Save message to the Mongo DB */
       const createdRoomMessage = await new this.RoomMessageModel({
         participantId: participantId,
@@ -110,10 +102,8 @@ export class MessageService {
   async getRoomMessages(
     getRoomMessagesDto: GetRoomMessagesDto,
   ): Promise<RoomMessage[]> {
-    const isParticipant = await this.chatRoomModel.findByIdAndUpdate(
+    const isParticipant = await this.chatRoomModel.findById(
       getRoomMessagesDto.chatRoomId,
-      { $addToSet: { participants: getRoomMessagesDto.userId } },
-      { new: true },
     );
 
     if (!isParticipant) {
