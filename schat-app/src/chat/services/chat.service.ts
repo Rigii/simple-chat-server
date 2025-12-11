@@ -7,14 +7,16 @@ import { Namespace, Socket } from 'socket.io';
 import { chatRoomEmitEvents } from '../constants/chat.events';
 import { strings } from '../strings';
 import { UserProfile } from 'src/user/schemas/user.schema';
-import { ChatCacheService } from './chat-cache.service';
+import { ChatDetailsService } from './chat-details.service';
+import { ActiveConnectionsService } from './active-connections.service';
 
 @Injectable()
 export class ChatService implements OnModuleInit {
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
-    private readonly chatCacheService: ChatCacheService,
+    private readonly chatDetailsService: ChatDetailsService,
+    private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}
 
   private async createDefaultChatRoomDBRecords() {
@@ -27,7 +29,7 @@ export class ChatService implements OnModuleInit {
 
       if (existingRooms.length) {
         for (const room of existingRooms) {
-          await this.chatCacheService.storeChatRoomWithCache(room);
+          await this.chatDetailsService.storeChatRoomWithCache(room);
         }
         return;
       }
@@ -49,32 +51,21 @@ export class ChatService implements OnModuleInit {
     return await this.userProfileModel.findById(userId).exec();
   };
 
-  getCurrentUser = async (userId: string) => {
-    return await this.userProfileModel.findById(userId).exec();
-  };
-
-  async addInterlocutorToActiveUsers({
+  /* Add clientId (device id) to the participiant set */
+  async addIdToExistingInterlocutorConnection({
     clientId,
     userId,
     nickname,
-    activeUsers,
   }: {
     clientId: string;
     userId: string;
     nickname: string;
-    activeUsers: Map<string, Set<string>>;
   }) {
     console.log(`User ${nickname} ${clientId} is active.`);
-
-    if (!activeUsers.has(userId)) {
-      activeUsers.set(userId, new Set());
-    }
-
-    if (activeUsers.get(userId).has(clientId)) {
-      return;
-    }
-    // Add clientId (device id) to the set of active client devices for the user
-    activeUsers.get(userId).add(clientId);
+    this.activeConnectionsService.addNewClientIdToParticipiantPoolConnection({
+      userId,
+      clientId,
+    });
   }
 
   handleJoinUserRooms = async ({
@@ -91,8 +82,12 @@ export class ChatService implements OnModuleInit {
     try {
       /* TODO:// AllChatRooms for the testing purposes. Will be only users rooms */
       const userChatRooms =
-        await this.chatCacheService.getAllChatRoomsFromCache();
+        await this.chatDetailsService.getAllChatRoomsFromCache();
+
       for (const room of userChatRooms) {
+        /* Adding Room Id to the active connections pool */
+        this.activeConnectionsService.addRoomToGeneralPool(room._id);
+
         await this.handleJoinChat({
           client,
           room,
@@ -130,13 +125,14 @@ export class ChatService implements OnModuleInit {
     dto: { userId: string };
   }) {
     try {
-      await this.chatRoomModel.findByIdAndUpdate(
-        room._id || '',
-        { $addToSet: { participants: dto.userId } },
-        { new: true },
-      );
-
+      /* Join Participant to the room */
       client.join([room._id]);
+
+      /* Adding User Id to the Room Active Interlocutors pull */
+      this.activeConnectionsService.addParticipantToRoomConnection(
+        room._id,
+        dto.userId,
+      );
     } catch (error) {
       console.error(strings.joinChatError, error);
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
@@ -145,43 +141,50 @@ export class ChatService implements OnModuleInit {
     }
   }
 
-  async roomsDisconnectInterlocutor({
+  async disconnectInterlocutor({
     client,
     userId,
     nickname,
-    activeUsers,
     io,
   }: {
     client: Socket;
     userId: string;
     nickname: string;
-    activeUsers: Map<string, Set<string>>;
     io: Namespace;
   }) {
     try {
-      if (activeUsers.has(userId)) {
-        const userConnections = activeUsers.get(userId);
-        userConnections.delete(client.id);
+      this.activeConnectionsService.removeParticipantNestedConnection(
+        userId,
+        client.id,
+      );
 
-        if (userConnections.size === 0) {
-          activeUsers.delete(userId);
-          console.log(
-            strings.userHasNoMoreActiveConnections
-              .replace('${nickname}', nickname)
-              .replace('${userId}', userId),
-          );
-        } else {
-          console.log(
-            strings.userHasOtherActiveConnections
-              .replace('${nickname}', nickname)
-              .replace('${userId}', userId)
-              .replace('${connectionsCount}', userConnections.size.toString()),
-          );
-        }
+      const connectionsPerParticipant =
+        this.activeConnectionsService.getAllParticipantsPoolConnection(userId);
+
+      if (connectionsPerParticipant.size === 0) {
+        this.activeConnectionsService.deleteUserGeneralConnection(userId);
+
+        console.log(
+          strings.userHasNoMoreActiveConnections
+            .replace('${nickname}', nickname)
+            .replace('${userId}', userId),
+        );
+      } else {
+        console.log(
+          strings.userHasOtherActiveConnections
+            .replace('${nickname}', nickname)
+            .replace('${userId}', userId)
+            .replace(
+              '${connectionsCount}',
+              connectionsPerParticipant.size.toString(),
+            ),
+        );
       }
-
-      const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
+      /* Deleeting participant id from the rooms */
+      const chatRooms =
+        await this.chatDetailsService.getAllChatRoomsFromCache();
       for (const room of chatRooms) {
+        /* Emitting Participiant Leave Room message  */
         io.to(room._id.toString()).emit(
           chatRoomEmitEvents.PARTICIPANT_DISCONNECTED,
           {
@@ -192,19 +195,16 @@ export class ChatService implements OnModuleInit {
           },
         );
 
+        /* Removing User Id from the Chat Room Online Interlocutors pull */
+        this.activeConnectionsService.removeParticipantRoomConnection(
+          room._id,
+          userId,
+        );
+
         console.log(`User ${nickname} left room: ${room._id.toString()}`);
       }
     } catch (error) {
       console.error(strings.userDisconnectingError, error);
-
-      // Fallback cleanup
-      if (activeUsers.has(userId)) {
-        const userConnections = activeUsers.get(userId);
-        userConnections.delete(client.id);
-        if (userConnections.size === 0) {
-          activeUsers.delete(userId);
-        }
-      }
     }
   }
 
@@ -219,7 +219,7 @@ export class ChatService implements OnModuleInit {
     nickname: string;
     io: Namespace;
   }) {
-    const chatRooms = await this.chatCacheService.getAllChatRoomsFromCache();
+    const chatRooms = await this.chatDetailsService.getAllChatRoomsFromCache();
 
     for (const room of chatRooms) {
       await client.leave(room._id.toString());

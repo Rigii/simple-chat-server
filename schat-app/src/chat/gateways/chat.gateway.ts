@@ -12,6 +12,7 @@ import { WsErrorFilter } from 'shared/ws-error.filter';
 import { MessageService } from '../services/message.service';
 import { CHAT_NAMESPACES } from '../constants/chat.routes';
 import { strings } from '../strings';
+import { ActiveConnectionsService } from '../services/active-connections.service';
 
 @WebSocketGateway({
   namespace: CHAT_NAMESPACES.chatRoom,
@@ -21,11 +22,11 @@ export class ChatGateway {
   constructor(
     private readonly chatService: ChatService,
     private readonly messageService: MessageService,
+    private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}
 
   @WebSocketServer()
   io: Namespace;
-  private activeUsers = new Map<string, Set<string>>();
 
   async handleConnection(client: Socket) {
     const userId = client.handshake.query.userId as string;
@@ -39,11 +40,10 @@ export class ChatGateway {
       throw new Error(strings.userWithIdNotFound.replace('${userId}', userId));
     }
 
-    this.chatService.addInterlocutorToActiveUsers({
+    this.chatService.addIdToExistingInterlocutorConnection({
       clientId: client.id,
       userId,
       nickname: currentUser.nickname,
-      activeUsers: this.activeUsers,
     });
 
     this.chatService.handleJoinUserRooms({
@@ -65,11 +65,10 @@ export class ChatGateway {
       throw new Error(strings.userWithIdNotFound.replace('${userId}', userId));
     }
 
-    this.chatService.roomsDisconnectInterlocutor({
+    this.chatService.disconnectInterlocutor({
       client,
       nickname: currentUser.nickname,
       userId,
-      activeUsers: this.activeUsers,
       io: this.io,
     });
   }
@@ -79,7 +78,6 @@ export class ChatGateway {
     this.messageService.postRoomMessage({
       payload,
       client,
-      activeUsers: this.activeUsers,
       io: this.io,
     });
   }

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ChatService } from './services/chat.service';
-import { ChatCacheService } from './services/chat-cache.service';
+import { ChatDetailsService } from './services/chat-details.service';
 import { MessageService } from './services/message.service';
 import { ChatGateway } from './gateways/chat.gateway';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -9,6 +9,7 @@ import { UserProfile, UserProfileSchema } from 'src/user/schemas/user.schema';
 import { RoomMessage, RoomMessageSchema } from './schemas/room-message.schema';
 import { RedisService } from 'src/redis/redis.service';
 import { ChatController } from './controllers/chat.controller';
+import { ActiveConnectionsService } from './services/active-connections.service';
 
 @Module({
   imports: [
@@ -23,8 +24,9 @@ import { ChatController } from './controllers/chat.controller';
     ChatGateway,
     ChatService,
     MessageService,
-    ChatCacheService,
+    ChatDetailsService,
     RedisService,
+    ActiveConnectionsService,
   ],
 })
 export class ChatModule {}

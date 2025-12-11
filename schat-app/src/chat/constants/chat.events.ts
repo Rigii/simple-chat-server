@@ -1,4 +1,5 @@
 export const chatRoomEmitEvents = {
+  CLIENT_READY: 'client_ready',
   JOIN_CHAT_SUCCESS: 'join_chat_success',
   USER_JOINED_CHAT: 'user_joined_chat',
   USER_LEFT_CHAT: 'user_left_chat',
@@ -18,12 +19,15 @@ export const socketMessageNamespaces = {
   DELETE_CHAT_ROOM: 'delete_chat_room',
   DECLINE_CHAT: 'decline_chat',
   CHAT_ROOM_MESSAGE: 'chat_room_message',
+  ACTIVE_ROOM_PARTICIPANTS: 'active_room_participants',
+  ACTIVE_CHAT_PARTICIPANTS: 'active_chat_participants',
 };
 
 export const incommingEvents = {
   JOIN_CHAT: 'join_chat',
   LEAVE_CHAT: 'leave_chat',
   CHAT_ROOM_MESSAGE: 'chat_room_message',
+  HANDSHAKE: 'handshake',
 };
 
 export const roomMessageStatusEvent = {
