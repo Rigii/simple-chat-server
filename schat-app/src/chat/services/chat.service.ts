@@ -1,5 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { MOCKED_CHAT_ROOMS } from '../constants/chat.mocked';
+import { Injectable } from '@nestjs/common';
 import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,45 +10,13 @@ import { ChatDetailsService } from './chat-details.service';
 import { ActiveConnectionsService } from './active-connections.service';
 
 @Injectable()
-export class ChatService implements OnModuleInit {
+export class ChatService {
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
     private readonly chatDetailsService: ChatDetailsService,
     private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}
-
-  private async createDefaultChatRoomDBRecords() {
-    try {
-      const existingRooms = await this.chatRoomModel
-        .find()
-        .populate('participants')
-        .lean()
-        .exec();
-
-      if (existingRooms.length) {
-        for (const room of existingRooms) {
-          await this.chatDetailsService.storeChatRoomWithCache(room);
-        }
-        return;
-      }
-
-      MOCKED_CHAT_ROOMS.map((room) => {
-        return this.chatRoomModel.create({ chat_name: room.chat_name });
-      });
-      return;
-    } catch (error) {
-      console.error('Error initializing chat rooms:', error);
-    }
-  }
-
-  async onModuleInit() {
-    this.createDefaultChatRoomDBRecords();
-  }
-
-  getCurrentUserAccountData = async (userId: string) => {
-    return await this.userProfileModel.findById(userId).exec();
-  };
 
   /* Add clientId (device id) to the participiant set */
   async addIdToExistingInterlocutorConnection({
@@ -71,43 +38,53 @@ export class ChatService implements OnModuleInit {
   handleJoinUserRooms = async ({
     client,
     userId,
-    nickname,
+    currentinterlocutorNick,
+    interlocutorRoomIds,
     io,
   }: {
     client: Socket;
     userId: string;
-    nickname: string;
+    currentinterlocutorNick: string;
+    interlocutorRoomIds: string[];
     io: Namespace;
   }) => {
     try {
-      /* TODO:// AllChatRooms for the testing purposes. Will be only users rooms */
+      /* AllChatRooms for the testing purposes */
       const userChatRooms =
-        await this.chatDetailsService.getAllChatRoomsFromCache();
+        await this.chatDetailsService.getInterlocutorChatRoomsFromCache(
+          interlocutorRoomIds,
+        );
 
-      for (const room of userChatRooms) {
-        /* Adding Room Id to the active connections pool */
-        this.activeConnectionsService.addRoomToGeneralPool(room._id);
+      await Promise.allSettled(
+        userChatRooms.map(async (room) => {
+          /* Add room to global pool */
+          this.activeConnectionsService.addRoomToGeneralPool(room._id);
 
-        await this.handleJoinChat({
-          client,
-          room,
-          dto: { userId },
-        });
+          /* Join WebSocket room */
+          await this.handleJoinChat({
+            client,
+            room,
+            dto: { userId },
+          });
 
-        io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
-          message: strings.joinChatSuccess
-            .replace('${chatName}', room.chat_name)
-            .replace('${userNickname}', nickname),
-          data: {
-            roomId: room._id.toString(),
-            roomName: room.chat_name,
-            userId,
-            nickname,
-          },
-        });
+          /* Emit to all in room */
+          io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
+            message: strings.joinChatSuccess
+              .replace('${chatName}', room.chat_name)
+              .replace('${userNickname}', currentinterlocutorNick),
+            data: {
+              roomId: room._id.toString(),
+              roomName: room.chat_name,
+              userId,
+              currentinterlocutorNick,
+            },
+          });
 
-        console.log(`User ${nickname} joined room: ${room._id.toString()}`);
-      }
+          console.log(
+            `User ${currentinterlocutorNick} joined room: ${room._id.toString()}`,
+          );
+        }),
+      );
     } catch (error) {
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
         message: error.message,
@@ -145,11 +122,13 @@ export class ChatService implements OnModuleInit {
     client,
     userId,
     nickname,
+    interlocutorRoomIds,
     io,
   }: {
     client: Socket;
     userId: string;
     nickname: string;
+    interlocutorRoomIds: string[];
     io: Namespace;
   }) {
     try {
@@ -182,7 +161,9 @@ export class ChatService implements OnModuleInit {
       }
       /* Deleeting participant id from the rooms */
       const chatRooms =
-        await this.chatDetailsService.getAllChatRoomsFromCache();
+        await this.chatDetailsService.getInterlocutorChatRoomsFromCache(
+          interlocutorRoomIds,
+        );
       for (const room of chatRooms) {
         /* Emitting Participiant Leave Room message  */
         io.to(room._id.toString()).emit(
@@ -212,14 +193,19 @@ export class ChatService implements OnModuleInit {
     client,
     userId,
     nickname,
+    interlocutorRoomIds,
     io,
   }: {
     client: Socket;
     userId: string;
     nickname: string;
+    interlocutorRoomIds: string[];
     io: Namespace;
   }) {
-    const chatRooms = await this.chatDetailsService.getAllChatRoomsFromCache();
+    const chatRooms =
+      await this.chatDetailsService.getInterlocutorChatRoomsFromCache(
+        interlocutorRoomIds,
+      );
 
     for (const room of chatRooms) {
       await client.leave(room._id.toString());

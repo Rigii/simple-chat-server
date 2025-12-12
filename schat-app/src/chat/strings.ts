@@ -6,6 +6,7 @@ export const strings = {
   userDisconnectingError: 'Error while disconnecting user:',
   joinChatError: 'Join chat error',
   chatRoomsNotFound: 'No chat rooms found',
+  userNotFound: 'User not found',
   postChatRoomMessageError: 'Error posting chat room message',
   invalidUserId: 'Invalid or missing userId:',
   userWithIdNotFound: 'User with ID ${userId} not found',

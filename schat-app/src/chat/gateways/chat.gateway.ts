@@ -12,7 +12,7 @@ import { WsErrorFilter } from 'shared/ws-error.filter';
 import { MessageService } from '../services/message.service';
 import { CHAT_NAMESPACES } from '../constants/chat.routes';
 import { strings } from '../strings';
-import { ActiveConnectionsService } from '../services/active-connections.service';
+import { UserService } from 'src/user/services/user.service';
 
 @WebSocketGateway({
   namespace: CHAT_NAMESPACES.chatRoom,
@@ -22,7 +22,7 @@ export class ChatGateway {
   constructor(
     private readonly chatService: ChatService,
     private readonly messageService: MessageService,
-    private readonly activeConnectionsService: ActiveConnectionsService,
+    private readonly userService: UserService,
   ) {}
 
   @WebSocketServer()
@@ -32,7 +32,7 @@ export class ChatGateway {
     const userId = client.handshake.query.userId as string;
 
     const currentUser =
-      await this.chatService.getCurrentUserAccountData(userId);
+      await this.userService.getCurrentUserAccountData(userId);
 
     if (!userId || !currentUser) {
       console.error(strings.invalidUserId, userId);
@@ -49,7 +49,8 @@ export class ChatGateway {
     this.chatService.handleJoinUserRooms({
       client,
       userId,
-      nickname: currentUser.nickname,
+      currentinterlocutorNick: currentUser.nickname,
+      interlocutorRoomIds: currentUser.rooms,
       io: this.io,
     });
   }
@@ -57,7 +58,7 @@ export class ChatGateway {
   async handleDisconnect(client: Socket) {
     const userId = client.handshake.query.userId as string;
     const currentUser =
-      await this.chatService.getCurrentUserAccountData(userId);
+      await this.userService.getCurrentUserAccountData(userId);
 
     if (!userId || !currentUser) {
       console.error(strings.invalidUserId, userId);
@@ -69,6 +70,7 @@ export class ChatGateway {
       client,
       nickname: currentUser.nickname,
       userId,
+      interlocutorRoomIds: currentUser.rooms,
       io: this.io,
     });
   }

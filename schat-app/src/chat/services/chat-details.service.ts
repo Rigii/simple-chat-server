@@ -7,6 +7,8 @@ import { ActiveConnectionsService } from './active-connections.service';
 import { GetRoomMessagesDto } from '../dto/room-message.dto';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { strings } from '../strings';
+import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
+import { UserProfile } from 'src/user/schemas/user.schema';
 
 /* 
 ChatDetailsService
@@ -17,6 +19,7 @@ export class ChatDetailsService {
   constructor(
     @InjectModel(ChatRoom.name)
     private ChatRoomModel: Model<ChatRoomDocument>,
+    @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
     private readonly redisService: RedisService,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
     private readonly activeConnectionsService: ActiveConnectionsService,
@@ -53,33 +56,51 @@ export class ChatDetailsService {
     return room;
   }
 
-  /* For the demonstration purposes. Should return only rooms by provided room id's */
-  async getAllChatRoomsFromCache(): Promise<ChatRoom[]> {
-    const keys = await this.redisService.client.keys('chatroom:*');
+  async getInterlocutorChatRoomsFromCache(
+    interlocutorRoomIds: string[],
+  ): Promise<ChatRoom[]> {
     const rooms: ChatRoom[] = [];
+    const missingRoomIds: string[] = [];
 
-    for (const key of keys) {
+    for (const roomId of interlocutorRoomIds) {
+      const key = `chatroom:${roomId}`;
       const cached = await this.redisService.client.get(key);
+
       if (cached) {
         rooms.push(JSON.parse(cached as string) as ChatRoom);
+      } else {
+        missingRoomIds.push(roomId);
       }
     }
 
-    if (!rooms.length) {
-      const dbRooms = await this.ChatRoomModel.find()
-        .populate('participants')
-        .lean()
-        .exec();
-
-      for (const room of dbRooms) {
-        await this.redisService.set(
-          `chatroom:${room._id}`,
-          JSON.stringify(room),
-          3600000,
-        );
-        rooms.push(room);
-      }
+    if (missingRoomIds.length === 0) {
+      return rooms;
     }
+
+    const dbRooms = await this.ChatRoomModel.find({
+      _id: { $in: missingRoomIds },
+    })
+      .populate('participants')
+      .lean()
+      .exec();
+
+    for (const room of dbRooms) {
+      await this.redisService.set(
+        `chatroom:${room._id}`,
+        JSON.stringify(room),
+        3600000,
+      );
+      rooms.push(room);
+    }
+
+    return rooms;
+  }
+
+  async getAllAvailableRooms(): Promise<ChatRoom[]> {
+    const rooms = await this.ChatRoomModel.find()
+      .populate('participants')
+      .lean()
+      .exec();
 
     return rooms;
   }
@@ -117,6 +138,27 @@ export class ChatDetailsService {
     } catch (error) {
       console.error('Getting Room Details error:', error.message);
       throw new Error(error);
+    }
+  }
+
+  async addNewParticipantToRoom(dto: AddParticipantToChatRoomDto) {
+    await this.ChatRoomModel.findByIdAndUpdate(
+      dto.roomId.toString(),
+      { $addToSet: { participants: dto.userId } }, // ← Prevents duplicates
+      { new: true },
+    ).exec();
+
+    try {
+      await this.UserProfileModel.findByIdAndUpdate(
+        dto.userId,
+        { $addToSet: { rooms: dto.roomId } },
+        { new: true },
+      ).exec();
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new Error(error);
+      }
+      throw new Error(error.message);
     }
   }
 }

@@ -7,4 +7,5 @@ export const CHAT_ROUTES = {
   getChatMessages: 'get_chat_messages',
   getAllChatRooms: 'get_all_chat_rooms',
   getRoomDetails: 'get_room_details',
+  join_chat_rooms: 'join_chat_rooms',
 };
