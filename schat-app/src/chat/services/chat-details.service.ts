@@ -9,6 +9,7 @@ import { RoomMessage } from '../schemas/room-message.schema';
 import { strings } from '../strings';
 import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
 import { UserProfile } from 'src/user/schemas/user.schema';
+import { UserService } from 'src/user/services/user.service';
 
 /* 
 ChatDetailsService
@@ -20,17 +21,14 @@ export class ChatDetailsService {
     @InjectModel(ChatRoom.name)
     private ChatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
-    private readonly redisService: RedisService,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
+    private readonly redisService: RedisService,
     private readonly activeConnectionsService: ActiveConnectionsService,
+    private readonly userProfileService: UserService,
   ) {}
 
   async storeChatRoomWithCache(room: ChatRoom): Promise<ChatRoom | null> {
     const cacheKey = `chatroom:${room._id}`;
-    const cached = await this.redisService.client.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached as string) as ChatRoom;
-    }
     await this.redisService.set(cacheKey, JSON.stringify(room), 3600);
 
     return room;
@@ -141,24 +139,39 @@ export class ChatDetailsService {
     }
   }
 
-  async addNewParticipantToRoom(dto: AddParticipantToChatRoomDto) {
-    await this.ChatRoomModel.findByIdAndUpdate(
-      dto.roomId.toString(),
-      { $addToSet: { participants: dto.userId } }, // ← Prevents duplicates
-      { new: true },
-    ).exec();
+  async addNewParticipantToRoom(
+    dto: AddParticipantToChatRoomDto,
+  ): Promise<{ currentRoomData: ChatRoom; currentUserData: UserProfile }> {
+    let currentRoomData: ChatRoom;
+    let currentUserData: UserProfile;
 
     try {
-      await this.UserProfileModel.findByIdAndUpdate(
-        dto.userId,
-        { $addToSet: { rooms: dto.roomId } },
+      currentRoomData = await this.ChatRoomModel.findByIdAndUpdate(
+        dto.roomId.toString(),
+        { $addToSet: { participants: dto.userId } },
         { new: true },
       ).exec();
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new Error(error);
+
+      this.storeChatRoomWithCache(currentRoomData);
+
+      try {
+        currentUserData = await this.userProfileService.addRoomToUser(
+          dto.userId,
+          dto.roomId,
+        );
+
+        return { currentRoomData, currentUserData };
+      } catch (userError) {
+        await this.ChatRoomModel.findByIdAndUpdate(dto.roomId.toString(), {
+          $pull: { participants: dto.userId },
+        }).exec();
+
+        throw new Error(
+          `${strings.failedAddRoomsToUserProfile} ${userError.message}`,
+        );
       }
-      throw new Error(error.message);
+    } catch (error) {
+      throw error;
     }
   }
 }

@@ -16,4 +16,6 @@ export const strings = {
     'User ${nickname} still has ${userConnections.size} other connection(s)',
   userNotParticipantOfChatRoom:
     'User with ID ${userId} is not a participant of chat room ${roomId}',
+  failedAddRoomsToUserProfile:
+    'Transaktion. Failed to add rooms to the user profile. Rolled back room addition:',
 };

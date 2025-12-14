@@ -46,8 +46,8 @@ export class ChatController {
     return this.chatDetailsService.getRoomData(getRoomMessagesDto);
   }
 
-  @Post(CHAT_ROUTES.join_chat_rooms)
-  async addRooms(@Body() addChatRoomsDto: AddParticipantToChatRoomDto) {
-    await this.chatDetailsService.addNewParticipantToRoom(addChatRoomsDto);
+  @Post(CHAT_ROUTES.joinChatRooms)
+  addRooms(@Body() addChatRoomsDto: AddParticipantToChatRoomDto) {
+    return this.chatDetailsService.addNewParticipantToRoom(addChatRoomsDto);
   }
 }

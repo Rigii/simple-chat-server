@@ -29,30 +29,36 @@ export class ChatGateway {
   io: Namespace;
 
   async handleConnection(client: Socket) {
-    const userId = client.handshake.query.userId as string;
+    try {
+      const userId = client.handshake.query.userId as string;
 
-    const currentUser =
-      await this.userService.getCurrentUserAccountData(userId);
+      const currentUser =
+        await this.userService.getCurrentUserAccountData(userId);
 
-    if (!userId || !currentUser) {
-      console.error(strings.invalidUserId, userId);
-      client.disconnect();
-      throw new Error(strings.userWithIdNotFound.replace('${userId}', userId));
+      if (!userId || !currentUser) {
+        console.error(strings.invalidUserId, userId);
+        client.disconnect();
+        throw new Error(
+          strings.userWithIdNotFound.replace('${userId}', userId),
+        );
+      }
+
+      this.chatService.addIdToExistingInterlocutorConnection({
+        clientId: client.id,
+        userId,
+        nickname: currentUser.nickname,
+      });
+
+      this.chatService.handleJoinUserRooms({
+        client,
+        userId,
+        nickname: currentUser.nickname,
+        interlocutorRoomIds: currentUser.rooms,
+        io: this.io,
+      });
+    } catch (error) {
+      throw error;
     }
-
-    this.chatService.addIdToExistingInterlocutorConnection({
-      clientId: client.id,
-      userId,
-      nickname: currentUser.nickname,
-    });
-
-    this.chatService.handleJoinUserRooms({
-      client,
-      userId,
-      currentinterlocutorNick: currentUser.nickname,
-      interlocutorRoomIds: currentUser.rooms,
-      io: this.io,
-    });
   }
 
   async handleDisconnect(client: Socket) {

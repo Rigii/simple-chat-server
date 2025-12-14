@@ -38,13 +38,13 @@ export class ChatService {
   handleJoinUserRooms = async ({
     client,
     userId,
-    currentinterlocutorNick,
+    nickname,
     interlocutorRoomIds,
     io,
   }: {
     client: Socket;
     userId: string;
-    currentinterlocutorNick: string;
+    nickname: string;
     interlocutorRoomIds: string[];
     io: Namespace;
   }) => {
@@ -71,18 +71,16 @@ export class ChatService {
           io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
             message: strings.joinChatSuccess
               .replace('${chatName}', room.chat_name)
-              .replace('${userNickname}', currentinterlocutorNick),
+              .replace('${userNickname}', nickname),
             data: {
               roomId: room._id.toString(),
               roomName: room.chat_name,
               userId,
-              currentinterlocutorNick,
+              nickname,
             },
           });
 
-          console.log(
-            `User ${currentinterlocutorNick} joined room: ${room._id.toString()}`,
-          );
+          console.log(`User ${nickname} joined room: ${room._id.toString()}`);
         }),
       );
     } catch (error) {
