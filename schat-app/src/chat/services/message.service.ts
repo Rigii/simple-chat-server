@@ -35,7 +35,6 @@ export class MessageService {
   }): Promise<RoomMessage | void> {
     try {
       const { chatRoomId, message, participantId, nickname } = payload;
-
       const currentChatRoom =
         await this.chatDetailsService.getChatRoomWithCache(chatRoomId);
 
@@ -53,6 +52,12 @@ export class MessageService {
       /* Check if user related to the chatroom */
       const isParticipant = currentChatRoom.participants.some((participant) =>
         participant._id.toString().includes(participantId),
+      );
+      console.log(
+        111,
+        'ROOM_MEsAGE',
+        currentChatRoom.participants,
+        participantId,
       );
 
       if (!isParticipant) {
@@ -103,7 +108,7 @@ export class MessageService {
     getRoomMessagesDto: GetRoomMessagesDto,
   ): Promise<RoomMessage[]> {
     const isParticipant = await this.chatRoomModel.findById(
-      getRoomMessagesDto.chatRoomId,
+      getRoomMessagesDto.chatRoomId.toString(),
     );
 
     if (!isParticipant) {

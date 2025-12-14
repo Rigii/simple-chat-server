@@ -6,6 +6,7 @@ export const strings = {
   userDisconnectingError: 'Error while disconnecting user:',
   joinChatError: 'Join chat error',
   chatRoomsNotFound: 'No chat rooms found',
+  userNotFound: 'User not found',
   postChatRoomMessageError: 'Error posting chat room message',
   invalidUserId: 'Invalid or missing userId:',
   userWithIdNotFound: 'User with ID ${userId} not found',
@@ -15,4 +16,6 @@ export const strings = {
     'User ${nickname} still has ${userConnections.size} other connection(s)',
   userNotParticipantOfChatRoom:
     'User with ID ${userId} is not a participant of chat room ${roomId}',
+  failedAddRoomsToUserProfile:
+    'Transaktion. Failed to add rooms to the user profile. Rolled back room addition:',
 };

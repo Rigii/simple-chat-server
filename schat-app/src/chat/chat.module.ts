@@ -10,6 +10,8 @@ import { RoomMessage, RoomMessageSchema } from './schemas/room-message.schema';
 import { RedisService } from 'src/redis/redis.service';
 import { ChatController } from './controllers/chat.controller';
 import { ActiveConnectionsService } from './services/active-connections.service';
+import { UserModule } from 'src/user/user.module';
+import { InitDefaultRoomsService } from './services/init-default-rooms';
 
 @Module({
   imports: [
@@ -18,10 +20,12 @@ import { ActiveConnectionsService } from './services/active-connections.service'
       { name: UserProfile.name, schema: UserProfileSchema },
       { name: RoomMessage.name, schema: RoomMessageSchema },
     ]),
+    UserModule,
   ],
   controllers: [ChatController],
   providers: [
     ChatGateway,
+    InitDefaultRoomsService,
     ChatService,
     MessageService,
     ChatDetailsService,

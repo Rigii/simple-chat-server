@@ -1,14 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateUserDto } from '../dto/create-user.dto';
+import { CreateUserDto } from '../dto/user.dto';
 import { UserProfile } from '../schemas/user.schema';
+import { strings } from '../strings';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
   ) {}
+
+  async getCurrentUserAccountData(userId: string) {
+    return await this.UserProfileModel.findById(userId).exec();
+  }
 
   async create(createUserDto: CreateUserDto) {
     try {
@@ -27,10 +32,20 @@ export class UserService {
         _id: userObject._id.toString(),
         email: userObject.email,
         nickname: userObject.nickname,
+        rooms: userObject.rooms,
         role: userObject.role || 'user',
       };
     } catch (error) {
-      console.error('User Access Error');
+      console.error(strings.userAccessError);
+      throw error;
     }
+  }
+
+  async addRoomToUser(userId: string, roomId: string): Promise<UserProfile> {
+    return this.UserProfileModel.findByIdAndUpdate(
+      userId,
+      { $addToSet: { rooms: roomId } },
+      { new: true },
+    ).exec();
   }
 }

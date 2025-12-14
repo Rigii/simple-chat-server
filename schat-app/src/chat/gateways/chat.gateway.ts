@@ -12,7 +12,7 @@ import { WsErrorFilter } from 'shared/ws-error.filter';
 import { MessageService } from '../services/message.service';
 import { CHAT_NAMESPACES } from '../constants/chat.routes';
 import { strings } from '../strings';
-import { ActiveConnectionsService } from '../services/active-connections.service';
+import { UserService } from 'src/user/services/user.service';
 
 @WebSocketGateway({
   namespace: CHAT_NAMESPACES.chatRoom,
@@ -22,42 +22,49 @@ export class ChatGateway {
   constructor(
     private readonly chatService: ChatService,
     private readonly messageService: MessageService,
-    private readonly activeConnectionsService: ActiveConnectionsService,
+    private readonly userService: UserService,
   ) {}
 
   @WebSocketServer()
   io: Namespace;
 
   async handleConnection(client: Socket) {
-    const userId = client.handshake.query.userId as string;
+    try {
+      const userId = client.handshake.query.userId as string;
 
-    const currentUser =
-      await this.chatService.getCurrentUserAccountData(userId);
+      const currentUser =
+        await this.userService.getCurrentUserAccountData(userId);
 
-    if (!userId || !currentUser) {
-      console.error(strings.invalidUserId, userId);
-      client.disconnect();
-      throw new Error(strings.userWithIdNotFound.replace('${userId}', userId));
+      if (!userId || !currentUser) {
+        console.error(strings.invalidUserId, userId);
+        client.disconnect();
+        throw new Error(
+          strings.userWithIdNotFound.replace('${userId}', userId),
+        );
+      }
+
+      this.chatService.addIdToExistingInterlocutorConnection({
+        clientId: client.id,
+        userId,
+        nickname: currentUser.nickname,
+      });
+
+      this.chatService.handleJoinUserRooms({
+        client,
+        userId,
+        nickname: currentUser.nickname,
+        interlocutorRoomIds: currentUser.rooms,
+        io: this.io,
+      });
+    } catch (error) {
+      throw error;
     }
-
-    this.chatService.addIdToExistingInterlocutorConnection({
-      clientId: client.id,
-      userId,
-      nickname: currentUser.nickname,
-    });
-
-    this.chatService.handleJoinUserRooms({
-      client,
-      userId,
-      nickname: currentUser.nickname,
-      io: this.io,
-    });
   }
 
   async handleDisconnect(client: Socket) {
     const userId = client.handshake.query.userId as string;
     const currentUser =
-      await this.chatService.getCurrentUserAccountData(userId);
+      await this.userService.getCurrentUserAccountData(userId);
 
     if (!userId || !currentUser) {
       console.error(strings.invalidUserId, userId);
@@ -69,6 +76,7 @@ export class ChatGateway {
       client,
       nickname: currentUser.nickname,
       userId,
+      interlocutorRoomIds: currentUser.rooms,
       io: this.io,
     });
   }
