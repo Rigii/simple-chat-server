@@ -11,10 +11,6 @@ import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
 import { UserProfile } from 'src/user/schemas/user.schema';
 import { UserService } from 'src/user/services/user.service';
 
-/* 
-ChatDetailsService
-The service stores chat rooms in cache (1 hour) only if chat rooms was requested 
-*/
 @Injectable()
 export class ChatDetailsService {
   constructor(
