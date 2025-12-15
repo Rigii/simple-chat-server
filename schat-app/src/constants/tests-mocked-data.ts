@@ -9,12 +9,18 @@ export const mockLogger = {
 };
 
 export const mockExistingUser = {
-  _id: 'existing-id',
+  _id: { toString: () => mockUserId },
   email: 'existing@example.com',
-  nickname: 'existing',
+  nickname: 'existingUser',
   rooms: [],
   role: 'user',
-  toObject: jest.fn(),
+  toObject: jest.fn().mockReturnValue({
+    _id: mockUserId,
+    email: 'existing@example.com',
+    nickname: 'existingUser',
+    rooms: [],
+    role: 'user',
+  }),
 };
 
 export const mockNewUser = {
@@ -35,6 +41,14 @@ export const mockNewUser = {
 export const mockUserProfileModel = {
   create: jest.fn(),
   findOne: jest.fn(),
+  findById: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   exec: jest.fn(),
 };
+
+export const mockMongooseQuery = (returnValue) => ({
+  exec: jest.fn().mockResolvedValue(returnValue),
+  lean: jest.fn().mockReturnThis(),
+  select: jest.fn().mockReturnThis(),
+  populate: jest.fn().mockReturnThis(),
+});

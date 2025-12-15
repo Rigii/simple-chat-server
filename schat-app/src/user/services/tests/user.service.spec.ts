@@ -8,9 +8,11 @@ import { UserProfile } from 'src/user/schemas/user.schema';
 import {
   mockExistingUser,
   mockLogger,
+  mockMongooseQuery,
   mockNewUser,
   mockUserProfileModel,
 } from 'src/constants/tests-mocked-data';
+import { TUserRole } from 'src/user/types';
 
 describe('UserService', () => {
   let service: UserService;
@@ -35,76 +37,78 @@ describe('UserService', () => {
     jest.clearAllMocks();
   });
 
-  describe('create', () => {
+  it('should create new user', async () => {
     const createUserDto: CreateUserDto = {
-      email: 'new@example.com',
-      nickname: 'newUser',
-      role: 'user',
+      email: mockNewUser.email,
+      nickname: mockNewUser.nickname,
+      role: mockNewUser.role as TUserRole,
     };
+    mockUserProfileModel.findOne.mockResolvedValue(null);
+    mockUserProfileModel.create.mockResolvedValue(mockNewUser);
 
-    it('should create new user', async () => {
-      mockUserProfileModel.findOne.mockResolvedValue(null);
-      mockUserProfileModel.create.mockResolvedValue(mockNewUser);
-
-      const result = await service.create({
-        ...createUserDto,
-        email: mockNewUser.email,
-      });
-
-      expect(mockUserProfileModel.findOne).toHaveBeenCalledWith({
-        email: mockNewUser.email,
-      });
-      expect(mockUserProfileModel.create).toHaveBeenCalledWith({
-        ...createUserDto,
-        email: mockNewUser.email,
-      });
-
-      expect(result).toEqual({
-        _id: mockNewUser._id.toString(),
-        email: mockNewUser.email,
-        nickname: mockNewUser.nickname,
-        rooms: [],
-        role: mockNewUser.role,
-      });
+    const result = await service.create({
+      ...createUserDto,
+      email: mockNewUser.email,
     });
 
-    it('should return existing user when email already exists', async () => {
-      mockExistingUser.toObject.mockReturnValue(mockExistingUser);
-      mockUserProfileModel.findOne.mockResolvedValue(mockExistingUser);
-
-      const result = await service.create({
-        ...createUserDto,
-        email: mockExistingUser.email,
-      });
-
-      expect(mockUserProfileModel.findOne).toHaveBeenCalledWith({
-        email: mockExistingUser.email,
-      });
-      expect(mockUserProfileModel.create).not.toHaveBeenCalled();
-      expect(result).toEqual({
-        _id: mockExistingUser._id.toString(),
-        email: mockExistingUser.email,
-        nickname: mockExistingUser.nickname,
-        rooms: mockExistingUser.rooms ?? [],
-        role: mockExistingUser.role,
-      });
+    expect(mockUserProfileModel.findOne).toHaveBeenCalledWith({
+      email: mockNewUser.email,
+    });
+    expect(mockUserProfileModel.create).toHaveBeenCalledWith({
+      ...createUserDto,
+      email: mockNewUser.email,
     });
 
-    it('should get account data', async () => {
-      mockExistingUser.toObject.mockReturnValue(mockExistingUser);
-      mockUserProfileModel.findOne.mockResolvedValue(mockExistingUser);
-
-      const result = await service.getCurrentUserAccountData(
-        mockExistingUser._id.toString(),
-      );
-
-      expect(result).toEqual({
-        _id: mockExistingUser._id.toString(),
-        email: mockExistingUser.email,
-        nickname: mockExistingUser.nickname,
-        rooms: mockExistingUser.rooms ?? [],
-        role: mockExistingUser.role,
-      });
+    expect(result).toEqual({
+      _id: mockNewUser._id.toString(),
+      email: mockNewUser.email,
+      nickname: mockNewUser.nickname,
+      rooms: [],
+      role: mockNewUser.role,
     });
+  });
+
+  it('should return existing user when email already exists', async () => {
+    const createUserDto: CreateUserDto = {
+      email: mockExistingUser.email,
+      nickname: mockExistingUser.nickname,
+      role: mockExistingUser.role as TUserRole,
+    };
+    mockUserProfileModel.findOne.mockResolvedValue(mockExistingUser);
+
+    const result = await service.create({
+      ...createUserDto,
+      email: mockExistingUser.email,
+    });
+
+    expect(mockUserProfileModel.findOne).toHaveBeenCalledWith({
+      email: mockExistingUser.email,
+    });
+    expect(mockUserProfileModel.create).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      _id: mockExistingUser._id.toString(),
+      email: mockExistingUser.email,
+      nickname: mockExistingUser.nickname,
+      rooms: mockExistingUser.rooms ?? [],
+      role: mockExistingUser.role,
+    });
+  });
+
+  it('should get account data', async () => {
+    const mockQuery = mockMongooseQuery(mockExistingUser); // Create a mock query chain with .exec()
+
+    mockUserProfileModel.findById.mockReturnValue(mockQuery);
+
+    const result = await service.getCurrentUserAccountData(
+      mockExistingUser._id.toString(),
+    );
+
+    expect(mockUserProfileModel.findById).toHaveBeenCalledWith(
+      mockExistingUser._id.toString(),
+    );
+
+    expect(mockQuery.exec).toHaveBeenCalled();
+
+    expect(result).toBe(mockExistingUser);
   });
 });
