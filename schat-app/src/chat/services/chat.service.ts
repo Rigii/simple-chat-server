@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,29 +11,14 @@ import { ActiveConnectionsService } from './active-connections.service';
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
     private readonly chatDetailsService: ChatDetailsService,
     private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}
-
-  /* Add clientId (device id) to the participiant set */
-  async addIdToExistingInterlocutorConnection({
-    clientId,
-    userId,
-    nickname,
-  }: {
-    clientId: string;
-    userId: string;
-    nickname: string;
-  }) {
-    console.log(`User ${nickname} ${clientId} is active.`);
-    this.activeConnectionsService.addNewClientIdToParticipiantPoolConnection({
-      userId,
-      clientId,
-    });
-  }
 
   handleJoinUserRooms = async ({
     client,
@@ -49,40 +34,38 @@ export class ChatService {
     io: Namespace;
   }) => {
     try {
-      /* AllChatRooms for the testing purposes */
       const userChatRooms =
         await this.chatDetailsService.getInterlocutorChatRoomsFromCache(
           interlocutorRoomIds,
         );
+      for (const room of userChatRooms) {
+        /* Add room to global pool */
+        this.activeConnectionsService.addRoomToGeneralPool(room._id);
 
-      await Promise.allSettled(
-        userChatRooms.map(async (room) => {
-          /* Add room to global pool */
-          this.activeConnectionsService.addRoomToGeneralPool(room._id);
+        /* Join WebSocket room */
+        await this.handleJoinChat({
+          client,
+          room,
+          dto: { userId },
+        });
 
-          /* Join WebSocket room */
-          await this.handleJoinChat({
-            client,
-            room,
-            dto: { userId },
-          });
+        /* Emit to all in room */
+        io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
+          message: strings.joinChatSuccess
+            .replace('${chatName}', room.chat_name)
+            .replace('${userNickname}', nickname),
+          data: {
+            roomId: room._id.toString(),
+            roomName: room.chat_name,
+            userId,
+            nickname,
+          },
+        });
 
-          /* Emit to all in room */
-          io.to(room._id.toString()).emit(chatRoomEmitEvents.USER_JOINED_CHAT, {
-            message: strings.joinChatSuccess
-              .replace('${chatName}', room.chat_name)
-              .replace('${userNickname}', nickname),
-            data: {
-              roomId: room._id.toString(),
-              roomName: room.chat_name,
-              userId,
-              nickname,
-            },
-          });
-
-          console.log(`User ${nickname} joined room: ${room._id.toString()}`);
-        }),
-      );
+        this.logger.log(
+          `${nickname} ${strings.joinedRoom} ${room._id.toString()}`,
+        );
+      }
     } catch (error) {
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
         message: error.message,
@@ -109,7 +92,7 @@ export class ChatService {
         dto.userId,
       );
     } catch (error) {
-      console.error(strings.joinChatError, error);
+      this.logger.error(strings.joinChatError, error);
       client.emit(chatRoomEmitEvents.JOIN_CHAT_ERROR, {
         message: error.message,
       });
@@ -141,22 +124,14 @@ export class ChatService {
       if (connectionsPerParticipant.size === 0) {
         this.activeConnectionsService.deleteUserGeneralConnection(userId);
 
-        console.log(
-          strings.userHasNoMoreActiveConnections
-            .replace('${nickname}', nickname)
-            .replace('${userId}', userId),
+        this.logger.log(
+          `${nickname}: ${strings.userHasNoMoreActiveConnections}`,
         );
       } else {
-        console.log(
-          strings.userHasOtherActiveConnections
-            .replace('${nickname}', nickname)
-            .replace('${userId}', userId)
-            .replace(
-              '${connectionsCount}',
-              connectionsPerParticipant.size.toString(),
-            ),
-        );
+        this.logger.log(`${nickname} ${strings.userHasOtherActiveConnections},
+        `);
       }
+
       /* Deleeting participant id from the rooms */
       const chatRooms =
         await this.chatDetailsService.getInterlocutorChatRoomsFromCache(
@@ -180,13 +155,16 @@ export class ChatService {
           userId,
         );
 
-        console.log(`User ${nickname} left room: ${room._id.toString()}`);
+        this.logger.log(
+          `${nickname} ${strings.leftRoom} ${room._id.toString()}`,
+        );
       }
     } catch (error) {
-      console.error(strings.userDisconnectingError, error);
+      this.logger.error(strings.userDisconnectingError, error);
     }
   }
 
+  /* TODO:// apply in the next update */
   async userLeftChat({
     client,
     userId,
@@ -222,7 +200,7 @@ export class ChatService {
         data: { roomId: room._id.toString(), userId, nickname },
       });
 
-      console.log(`User ${nickname} left room: ${room._id.toString()}`);
+      this.logger.log(`${nickname} ${strings.leftRoom} ${room._id.toString()}`);
     }
   }
 }

@@ -11,8 +11,8 @@ import { PostRoomMessageDto } from '../dto/room-message.dto';
 import { WsErrorFilter } from 'shared/ws-error.filter';
 import { MessageService } from '../services/message.service';
 import { CHAT_NAMESPACES } from '../constants/chat.routes';
-import { strings } from '../strings';
 import { UserService } from 'src/user/services/user.service';
+import { ActiveConnectionsService } from '../services/active-connections.service';
 
 @WebSocketGateway({
   namespace: CHAT_NAMESPACES.chatRoom,
@@ -23,6 +23,7 @@ export class ChatGateway {
     private readonly chatService: ChatService,
     private readonly messageService: MessageService,
     private readonly userService: UserService,
+    private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}
 
   @WebSocketServer()
@@ -35,15 +36,8 @@ export class ChatGateway {
       const currentUser =
         await this.userService.getCurrentUserAccountData(userId);
 
-      if (!userId || !currentUser) {
-        console.error(strings.invalidUserId, userId);
-        client.disconnect();
-        throw new Error(
-          strings.userWithIdNotFound.replace('${userId}', userId),
-        );
-      }
-
-      this.chatService.addIdToExistingInterlocutorConnection({
+      /* Add clientId (device id) to the participiant connection set */
+      this.activeConnectionsService.addNewClientIdToParticipiantPoolConnection({
         clientId: client.id,
         userId,
         nickname: currentUser.nickname,
@@ -57,28 +51,28 @@ export class ChatGateway {
         io: this.io,
       });
     } catch (error) {
+      client.disconnect();
       throw error;
     }
   }
 
   async handleDisconnect(client: Socket) {
-    const userId = client.handshake.query.userId as string;
-    const currentUser =
-      await this.userService.getCurrentUserAccountData(userId);
+    try {
+      const userId = client.handshake.query.userId as string;
+      const currentUser =
+        await this.userService.getCurrentUserAccountData(userId);
 
-    if (!userId || !currentUser) {
-      console.error(strings.invalidUserId, userId);
+      this.chatService.disconnectInterlocutor({
+        client,
+        nickname: currentUser.nickname,
+        userId,
+        interlocutorRoomIds: currentUser.rooms,
+        io: this.io,
+      });
+    } catch (error) {
       client.disconnect();
-      throw new Error(strings.userWithIdNotFound.replace('${userId}', userId));
+      throw error;
     }
-
-    this.chatService.disconnectInterlocutor({
-      client,
-      nickname: currentUser.nickname,
-      userId,
-      interlocutorRoomIds: currentUser.rooms,
-      io: this.io,
-    });
   }
 
   @SubscribeMessage(incommingEvents.CHAT_ROOM_MESSAGE)

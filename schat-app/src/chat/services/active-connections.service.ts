@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { strings } from '../strings';
 
 @Injectable()
 export class ActiveConnectionsService {
   private activeConnections = new Map<string, Set<string>>();
+  private readonly logger = new Logger(ActiveConnectionsService.name);
 
   private removeNestedConnection(parentId: string, id: string) {
     this.activeConnections.get(parentId)?.delete(id);
@@ -64,8 +66,6 @@ export class ActiveConnectionsService {
     return this.activeConnections;
   }
 
-  /* Participiant Connections (other device id's etc. what are belong to the    current participant connection) */
-
   removeParticipantNestedConnection(participantId: string, clientId: string) {
     this.removeNestedConnection(participantId, clientId);
   }
@@ -73,10 +73,14 @@ export class ActiveConnectionsService {
   addNewClientIdToParticipiantPoolConnection = ({
     userId,
     clientId,
+    nickname,
   }: {
     userId: string;
     clientId: string;
+    nickname?: string;
   }) => {
+    this.logger.log(`${nickname || ''} ${strings.isActive}`);
+
     if (!this.activeConnections.has(userId)) {
       this.activeConnections.set(userId, new Set());
     }
