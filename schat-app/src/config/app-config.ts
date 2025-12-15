@@ -3,6 +3,7 @@ import 'dotenv/config';
 
 export const AppConfig = () => ({
   port: Number(process.env.APP_PORT),
+  allowedOrigin: process.env.APP_ALLOWED_ORIGIN,
   mongo_database: {
     uri: process.env.DB_MONGO_URI,
     retryAttempts: 10,
