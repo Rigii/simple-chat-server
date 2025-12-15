@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RedisService } from 'src/redis/redis.service';
 import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
@@ -13,6 +13,8 @@ import { UserService } from 'src/user/services/user.service';
 
 @Injectable()
 export class ChatDetailsService {
+  private readonly logger = new Logger(ChatDetailsService.name);
+
   constructor(
     @InjectModel(ChatRoom.name)
     private ChatRoomModel: Model<ChatRoomDocument>,
@@ -53,41 +55,47 @@ export class ChatDetailsService {
   async getInterlocutorChatRoomsFromCache(
     interlocutorRoomIds: string[],
   ): Promise<ChatRoom[]> {
-    const rooms: ChatRoom[] = [];
-    const missingRoomIds: string[] = [];
+    try {
+      const rooms: ChatRoom[] = [];
+      const missingRoomIds: string[] = [];
 
-    for (const roomId of interlocutorRoomIds) {
-      const key = `chatroom:${roomId}`;
-      const cached = await this.redisService.client.get(key);
+      for (const roomId of interlocutorRoomIds) {
+        const key = `chatroom:${roomId}`;
+        const cached = await this.redisService.client.get(key);
 
-      if (cached) {
-        rooms.push(JSON.parse(cached as string) as ChatRoom);
-      } else {
-        missingRoomIds.push(roomId);
+        if (cached) {
+          rooms.push(JSON.parse(cached as string) as ChatRoom);
+        } else {
+          missingRoomIds.push(roomId);
+        }
       }
-    }
+      if (missingRoomIds.length === 0) {
+        return rooms;
+      }
 
-    if (missingRoomIds.length === 0) {
+      const dbRooms = await this.ChatRoomModel.find({
+        _id: { $in: missingRoomIds },
+      })
+        .populate('participants')
+        .lean()
+        .exec();
+
+      for (const room of dbRooms) {
+        await this.redisService.set(
+          `chatroom:${room._id}`,
+          JSON.stringify(room),
+          3600000,
+        );
+        rooms.push(room);
+      }
+
       return rooms;
+    } catch (error) {
+      throw new NotFoundException({
+        message: strings.gettingInterlocutorChatRoomsIssue,
+        details: error.message,
+      });
     }
-
-    const dbRooms = await this.ChatRoomModel.find({
-      _id: { $in: missingRoomIds },
-    })
-      .populate('participants')
-      .lean()
-      .exec();
-
-    for (const room of dbRooms) {
-      await this.redisService.set(
-        `chatroom:${room._id}`,
-        JSON.stringify(room),
-        3600000,
-      );
-      rooms.push(room);
-    }
-
-    return rooms;
   }
 
   async getAllAvailableRooms(): Promise<ChatRoom[]> {
@@ -99,9 +107,11 @@ export class ChatDetailsService {
     return rooms;
   }
 
-  async getRoomData(
-    getRoomDataDto: GetRoomMessagesDto,
-  ): Promise<{ messages: RoomMessage[]; activeParticipants: string[] }> {
+  async getRoomData(getRoomDataDto: GetRoomMessagesDto): Promise<{
+    messages: RoomMessage[];
+    activeParticipants: string[];
+    roomData: ChatRoom;
+  }> {
     try {
       const isParticipant = await this.ChatRoomModel.findById(
         getRoomDataDto.chatRoomId,
@@ -125,12 +135,16 @@ export class ChatDetailsService {
           getRoomDataDto.chatRoomId,
         );
 
+      const roomData = await this.getChatRoomWithCache(
+        getRoomDataDto.chatRoomId,
+      );
       return {
         messages: roomMessages,
+        roomData,
         activeParticipants: Array.from(activeParticipants?.values()),
       };
     } catch (error) {
-      console.error('Getting Room Details error:', error.message);
+      this.logger.error('Getting Room Details error:', error.message);
       throw new Error(error);
     }
   }
@@ -146,7 +160,10 @@ export class ChatDetailsService {
         dto.roomId.toString(),
         { $addToSet: { participants: dto.userId } },
         { new: true },
-      ).exec();
+      )
+        .populate('participants')
+        .lean()
+        .exec();
 
       this.storeChatRoomWithCache(currentRoomData);
 

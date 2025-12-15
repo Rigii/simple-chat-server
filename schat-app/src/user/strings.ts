@@ -4,4 +4,5 @@ export const strings = {
   duplicateRoomEntry: 'Duplicate room entry detected',
   failedToAddRoomsToProfile: 'Failed to add rooms to user profile:',
   userAccessError: 'User Access Error',
+  userNotFound: 'User not found',
 };

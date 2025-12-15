@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Logger } from '@nestjs/common';
 import { CHAT_ROUTES } from '../constants/chat.routes';
 import { MessageService } from '../services/message.service';
 import { GetRoomMessagesDto } from '../dto/room-message.dto';
@@ -9,6 +9,8 @@ import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
 
 @Controller(CHAT_ROUTES.chat)
 export class ChatController {
+  private readonly logger = new Logger(ChatController.name);
+
   constructor(
     private readonly messageService: MessageService,
     private readonly chatDetailsService: ChatDetailsService,
@@ -27,7 +29,7 @@ export class ChatController {
     );
 
     if (!currentParticipant) {
-      console.error(strings.userNotFound);
+      this.logger.error(strings.userNotFound);
       throw new Error(strings.userNotFound);
     }
 

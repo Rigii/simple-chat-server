@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import 'dotenv/config';
 
 export const AppConfig = () => ({
@@ -8,7 +9,7 @@ export const AppConfig = () => ({
     retryDelay: 5000,
     verboseRetryLog: true,
     onConnectionCreate: (connection) => {
-      console.log('Mongo connection created:', connection?.name);
+      Logger.log('Mongo connection created:', connection?.name);
     },
   },
   urls: {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from '../dto/user.dto';
@@ -7,12 +7,20 @@ import { strings } from '../strings';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
   ) {}
 
   async getCurrentUserAccountData(userId: string) {
-    return await this.UserProfileModel.findById(userId).exec();
+    const user = await this.UserProfileModel.findById(userId).exec();
+
+    if (!user) {
+      throw new NotFoundException(strings.userNotFound);
+    }
+
+    return user;
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -36,7 +44,7 @@ export class UserService {
         role: userObject.role || 'user',
       };
     } catch (error) {
-      console.error(strings.userAccessError);
+      this.logger.error(strings.userAccessError);
       throw error;
     }
   }

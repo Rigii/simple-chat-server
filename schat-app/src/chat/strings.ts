@@ -9,13 +9,15 @@ export const strings = {
   userNotFound: 'User not found',
   postChatRoomMessageError: 'Error posting chat room message',
   invalidUserId: 'Invalid or missing userId:',
-  userWithIdNotFound: 'User with ID ${userId} not found',
-  userHasNoMoreActiveConnections:
-    'User ${nickname} (${userId}) has no more active connections',
-  userHasOtherActiveConnections:
-    'User ${nickname} still has ${userConnections.size} other connection(s)',
+  userWithIdNotFound: 'User with not found',
+  userHasNoMoreActiveConnections: 'User has no more active connections',
+  userHasOtherActiveConnections: 'User still has other connection(s)',
   userNotParticipantOfChatRoom:
     'User with ID ${userId} is not a participant of chat room ${roomId}',
   failedAddRoomsToUserProfile:
     'Transaktion. Failed to add rooms to the user profile. Rolled back room addition:',
+  isActive: 'is active',
+  gettingInterlocutorChatRoomsIssue: 'Getting interlocutor chat rooms issue',
+  joinedRoom: 'joined room:',
+  leftRoom: 'left room:',
 };

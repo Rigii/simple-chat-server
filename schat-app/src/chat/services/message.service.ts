@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DefaultEventsMap, Namespace, Socket } from 'socket.io';
 import {
   roomMessageStatusEvent,
@@ -17,6 +17,8 @@ import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 
 @Injectable()
 export class MessageService {
+  private readonly logger = new Logger(MessageService.name);
+
   constructor(
     @InjectModel(ChatRoom.name)
     private chatRoomModel: Model<ChatRoomDocument>,
@@ -44,7 +46,7 @@ export class MessageService {
           chatRoomId,
         );
 
-        console.error(strings.chatRoomsNotFound, chatRoomId);
+        this.logger.error(strings.chatRoomsNotFound, chatRoomId);
         client.emit(roomMessageStatusEvent.ROOM_MESSAGE_FAILED, errorMessage);
         return;
       }
@@ -53,19 +55,13 @@ export class MessageService {
       const isParticipant = currentChatRoom.participants.some((participant) =>
         participant._id.toString().includes(participantId),
       );
-      console.log(
-        111,
-        'ROOM_MEsAGE',
-        currentChatRoom.participants,
-        participantId,
-      );
 
       if (!isParticipant) {
         const errorMessage = strings.userNotParticipantOfChatRoom
           .replace('${userId}', participantId)
           .replace('${roomId}', chatRoomId);
 
-        console.error(
+        this.logger.error(
           strings.userNotParticipantOfChatRoom,
           participantId,
           chatRoomId,
@@ -96,7 +92,7 @@ export class MessageService {
 
       return savedMessage;
     } catch (error) {
-      console.error(strings.postChatRoomMessageError, error);
+      this.logger.error(strings.postChatRoomMessageError, error);
       client.emit(
         roomMessageStatusEvent.ROOM_MESSAGE_FAILED,
         strings.postChatRoomMessageError,
@@ -123,28 +119,5 @@ export class MessageService {
     return this.RoomMessageModel.find({
       chatRoomId: getRoomMessagesDto.chatRoomId,
     }).limit(limit);
-  }
-
-  async postInterlocutorServiceMessage({
-    userIds,
-    event,
-    data,
-    activeUsers,
-    io,
-  }: {
-    userIds: string[];
-    event: string;
-    data: any;
-    activeUsers: Map<string, Set<string>>;
-    io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
-  }) {
-    userIds.forEach((userId) => {
-      const sockets = activeUsers.get(userId);
-      if (sockets) {
-        sockets.forEach((socketId) => {
-          io.to(socketId).emit(event, data);
-        });
-      }
-    });
   }
 }
