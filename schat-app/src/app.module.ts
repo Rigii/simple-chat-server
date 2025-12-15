@@ -7,8 +7,8 @@ import { DatabaseConfig } from './config/db-config';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppConfig } from './config/app-config';
-import { HttpErrorFilter } from 'shared/http-error.filter';
 import { APP_FILTER } from '@nestjs/core/constants';
+import { HttpErrorFilter } from '../shared/http-error.filter';
 
 @Module({
   imports: [

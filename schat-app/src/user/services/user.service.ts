@@ -29,19 +29,21 @@ export class UserService {
         email: createUserDto.email,
       });
 
-      if (presentedResult?.toObject()) {
-        return presentedResult;
+      const existingObject = presentedResult?.toObject();
+
+      if (existingObject) {
+        return {
+          ...existingObject,
+          _id: existingObject._id.toString(),
+        };
       }
 
-      const result = await this.UserProfileModel.create(createUserDto);
-      const userObject = result?.toObject();
+      const created = await this.UserProfileModel.create(createUserDto);
+      const createdObject = created.toObject();
 
       return {
-        _id: userObject._id.toString(),
-        email: userObject.email,
-        nickname: userObject.nickname,
-        rooms: userObject.rooms,
-        role: userObject.role || 'user',
+        ...createdObject,
+        _id: createdObject._id.toString(),
       };
     } catch (error) {
       this.logger.error(strings.userAccessError);
