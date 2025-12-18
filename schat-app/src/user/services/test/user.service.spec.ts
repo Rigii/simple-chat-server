@@ -7,12 +7,14 @@ import { CreateUserDto } from 'src/user/dto/user.dto';
 import { UserProfile } from 'src/user/schemas/user.schema';
 import {
   mockExistingUser,
-  mockLogger,
-  mockMongooseQuery,
   mockNewUser,
-  mockUserProfileModel,
-} from 'src/constants/tests-mocked-data';
+} from 'src/constants/test/tests-mocked-data';
 import { TUserRole } from 'src/user/types';
+import { mockLoggerService } from 'src/constants/test/mocked-services';
+import {
+  mockMongooseQuery,
+  mockUserProfileModel,
+} from 'src/constants/test/mocked-mongo-models';
 
 describe('UserService', () => {
   let service: UserService;
@@ -27,7 +29,7 @@ describe('UserService', () => {
         },
         {
           provide: Logger,
-          useValue: mockLogger,
+          useValue: mockLoggerService,
         },
       ],
     }).compile();

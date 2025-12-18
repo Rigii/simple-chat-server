@@ -4,7 +4,7 @@ import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
 import { Model } from 'mongoose';
 import { ActiveConnectionsService } from './active-connections.service';
-import { GetRoomMessagesDto } from '../dto/room-message.dto';
+import { GetRoomDataDto } from '../dto/room-message.dto';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { strings } from '../strings';
 import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
@@ -18,7 +18,6 @@ export class ChatDetailsService {
   constructor(
     @InjectModel(ChatRoom.name)
     private ChatRoomModel: Model<ChatRoomDocument>,
-    @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
     private readonly redisService: RedisService,
     private readonly activeConnectionsService: ActiveConnectionsService,
@@ -107,7 +106,7 @@ export class ChatDetailsService {
     return rooms;
   }
 
-  async getRoomData(getRoomDataDto: GetRoomMessagesDto): Promise<{
+  async getRoomData(getRoomDataDto: GetRoomDataDto): Promise<{
     messages: RoomMessage[];
     activeParticipants: string[];
     roomData: ChatRoom;

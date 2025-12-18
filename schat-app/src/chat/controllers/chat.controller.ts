@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Logger } from '@nestjs/common';
 import { CHAT_ROUTES } from '../constants/chat.routes';
 import { MessageService } from '../services/message.service';
-import { GetRoomMessagesDto } from '../dto/room-message.dto';
+import { GetRoomDataDto } from '../dto/room-message.dto';
 import { ChatDetailsService } from '../services/chat-details.service';
 import { strings } from '../strings';
 import { UserService } from 'src/user/services/user.service';
@@ -18,8 +18,8 @@ export class ChatController {
   ) {}
 
   @Post(CHAT_ROUTES.getChatMessages)
-  create(@Body() getRoomMessagesDto: GetRoomMessagesDto) {
-    return this.messageService.getRoomMessages(getRoomMessagesDto);
+  create(@Body() GetRoomDataDto: GetRoomDataDto) {
+    return this.messageService.getRoomMessages(GetRoomDataDto);
   }
 
   @Post(CHAT_ROUTES.getAllChatRooms)
@@ -44,8 +44,8 @@ export class ChatController {
   }
 
   @Post(CHAT_ROUTES.getRoomDetails)
-  getRoomDetails(@Body() getRoomMessagesDto: GetRoomMessagesDto) {
-    return this.chatDetailsService.getRoomData(getRoomMessagesDto);
+  getRoomDetails(@Body() GetRoomDataDto: GetRoomDataDto) {
+    return this.chatDetailsService.getRoomData(GetRoomDataDto);
   }
 
   @Post(CHAT_ROUTES.joinChatRooms)
