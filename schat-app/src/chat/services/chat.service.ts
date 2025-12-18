@@ -5,7 +5,6 @@ import { Model } from 'mongoose';
 import { Namespace, Socket } from 'socket.io';
 import { chatRoomEmitEvents } from '../constants/chat.events';
 import { strings } from '../strings';
-import { UserProfile } from 'src/user/schemas/user.schema';
 import { ChatDetailsService } from './chat-details.service';
 import { ActiveConnectionsService } from './active-connections.service';
 
@@ -15,7 +14,6 @@ export class ChatService {
 
   constructor(
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
-    @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfile>,
     private readonly chatDetailsService: ChatDetailsService,
     private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}

@@ -4,10 +4,7 @@ import {
   roomMessageStatusEvent,
   socketMessageNamespaces,
 } from '../constants/chat.events';
-import {
-  GetRoomMessagesDto,
-  PostRoomMessageDto,
-} from '../dto/room-message.dto';
+import { GetRoomDataDto, PostRoomMessageDto } from '../dto/room-message.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { Model } from 'mongoose';
@@ -101,23 +98,23 @@ export class MessageService {
   }
 
   async getRoomMessages(
-    getRoomMessagesDto: GetRoomMessagesDto,
+    GetRoomDataDto: GetRoomDataDto,
   ): Promise<RoomMessage[]> {
     const isParticipant = await this.chatRoomModel.findById(
-      getRoomMessagesDto.chatRoomId.toString(),
+      GetRoomDataDto.chatRoomId.toString(),
     );
 
     if (!isParticipant) {
       throw new Error(
         strings.userNotParticipantOfChatRoom
-          .replace('${userId}', getRoomMessagesDto.userId)
-          .replace('${roomId}', getRoomMessagesDto.chatRoomId),
+          .replace('${userId}', GetRoomDataDto.userId)
+          .replace('${roomId}', GetRoomDataDto.chatRoomId),
       );
     }
 
-    const limit = getRoomMessagesDto.chunkLimit ?? 250;
+    const limit = GetRoomDataDto.chunkLimit ?? 250;
     return this.RoomMessageModel.find({
-      chatRoomId: getRoomMessagesDto.chatRoomId,
+      chatRoomId: GetRoomDataDto.chatRoomId,
     }).limit(limit);
   }
 }
