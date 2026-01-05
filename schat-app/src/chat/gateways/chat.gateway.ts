@@ -37,18 +37,10 @@ export class ChatGateway {
         await this.userService.getCurrentUserAccountData(userId);
 
       /* Add clientId (device id) to the participiant connection set */
-      this.activeConnectionsService.addNewClientIdToParticipiantPoolConnection({
+      this.activeConnectionsService.addNewClientIdToParticipiantConnectionPool({
         clientId: client.id,
         userId,
         nickname: currentUser.nickname,
-      });
-
-      this.chatService.handleJoinUserRooms({
-        client,
-        userId,
-        nickname: currentUser.nickname,
-        interlocutorRoomIds: currentUser.rooms,
-        io: this.io,
       });
     } catch (error) {
       client.disconnect();
@@ -62,7 +54,7 @@ export class ChatGateway {
       const currentUser =
         await this.userService.getCurrentUserAccountData(userId);
 
-      this.chatService.disconnectInterlocutor({
+      this.chatService.disconnectInterlocutorAllRooms({
         client,
         nickname: currentUser.nickname,
         userId,
@@ -80,6 +72,31 @@ export class ChatGateway {
     this.messageService.postRoomMessage({
       payload,
       client,
+      io: this.io,
+    });
+  }
+
+  @SubscribeMessage(incommingEvents.SUBSCRIBE_ROOM)
+  async handleJoinRoom(client: Socket, payload: { roomId: string }) {
+    const userId = client.handshake.query.userId as string;
+    const currentUser =
+      await this.userService.getCurrentUserAccountData(userId);
+    this.chatService.handleJoinUserRoom({
+      client,
+      userId: client.handshake.query.userId as string,
+      roomId: payload.roomId,
+      nickname: currentUser.nickname,
+    });
+  }
+
+  @SubscribeMessage(incommingEvents.UNSUBSCRIBE_ROOM)
+  handleLeaveRoom(client: Socket, payload: { roomId: string }) {
+    const userId = client.handshake.query.userId as string;
+    this.chatService.disconnectInterlocutorAllRooms({
+      client,
+      userId,
+      nickname: '',
+      interlocutorRoomIds: [payload.roomId],
       io: this.io,
     });
   }

@@ -24,7 +24,8 @@ export const socketMessageNamespaces = {
 };
 
 export const incommingEvents = {
-  JOIN_CHAT: 'join_chat',
+  SUBSCRIBE_ROOM: 'subscribe_room',
+  UNSUBSCRIBE_ROOM: 'unsubscribe_room',
   LEAVE_CHAT: 'leave_chat',
   CHAT_ROOM_MESSAGE: 'chat_room_message',
   HANDSHAKE: 'handshake',

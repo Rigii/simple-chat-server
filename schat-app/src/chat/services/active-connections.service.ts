@@ -70,7 +70,7 @@ export class ActiveConnectionsService {
     this.removeNestedConnection(participantId, clientId);
   }
 
-  addNewClientIdToParticipiantPoolConnection = ({
+  addNewClientIdToParticipiantConnectionPool = ({
     userId,
     clientId,
     nickname,
@@ -84,6 +84,7 @@ export class ActiveConnectionsService {
     if (!this.activeConnections.has(userId)) {
       this.activeConnections.set(userId, new Set());
     }
+
     if (this.activeConnections.get(userId).has(clientId)) {
       return;
     }
