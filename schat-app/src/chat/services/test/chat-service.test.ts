@@ -5,7 +5,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { UserProfile } from 'src/user/schemas/user.schema';
 
 import { RoomMessage } from 'src/chat/schemas/room-message.schema';
-import { ChatRoom } from 'src/chat/schemas/chat-room.schema';
+import { SChatRoom } from 'src/chat/schemas/chat-room.schema';
 import { ChatDetailsService } from '../chat-details.service';
 import {
   mockChatRoomModel,
@@ -32,7 +32,7 @@ describe('ChatDetailsService', () => {
         ChatDetailsService,
 
         {
-          provide: getModelToken(ChatRoom.name),
+          provide: getModelToken(SChatRoom.name),
           useValue: mockChatRoomModel,
         },
         {

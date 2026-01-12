@@ -20,4 +20,5 @@ export const strings = {
   gettingInterlocutorChatRoomsIssue: 'Getting interlocutor chat rooms issue',
   joinedRoom: 'joined room:',
   leftRoom: 'left room:',
+  roomNotFound: 'Chat room not found',
 };

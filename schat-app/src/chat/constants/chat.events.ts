@@ -4,6 +4,8 @@ export const chatRoomEmitEvents = {
   USER_JOINED_CHAT: 'user_joined_chat',
   USER_LEFT_CHAT: 'user_left_chat',
   JOIN_CHAT_ERROR: 'join_chat_error',
+  ROOM_DETAILS: 'room_details',
+  FIND_ROOM_RECORD_ERROR: 'find_room_record_error',
   NEW_ROOM_PARTICIPANT_ADDED: 'new_room_participant_added',
   PARTICIPANT_DISCONNECTED: 'participant_disconnected',
   ADD_CHAT_PARTICIPANTS_ERROR: 'add_chat_participants_error',

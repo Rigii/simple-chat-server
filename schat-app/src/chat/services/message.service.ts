@@ -10,14 +10,14 @@ import { RoomMessage } from '../schemas/room-message.schema';
 import { Model } from 'mongoose';
 import { strings } from '../strings';
 import { ChatDetailsService } from './chat-details.service';
-import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
+import { SChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 
 @Injectable()
 export class MessageService {
   private readonly logger = new Logger(MessageService.name);
 
   constructor(
-    @InjectModel(ChatRoom.name)
+    @InjectModel(SChatRoom.name)
     private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
     private readonly chatDetailsService: ChatDetailsService,

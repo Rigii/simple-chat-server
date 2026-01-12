@@ -13,6 +13,8 @@ import { MessageService } from '../services/message.service';
 import { CHAT_NAMESPACES } from '../constants/chat.routes';
 import { UserService } from 'src/user/services/user.service';
 import { ActiveConnectionsService } from '../services/active-connections.service';
+import { ChatDetailsService } from '../services/chat-details.service';
+import { strings } from '../strings';
 
 @WebSocketGateway({
   namespace: CHAT_NAMESPACES.chatRoom,
@@ -21,6 +23,7 @@ import { ActiveConnectionsService } from '../services/active-connections.service
 export class ChatGateway {
   constructor(
     private readonly chatService: ChatService,
+    private readonly chatDetailsService: ChatDetailsService,
     private readonly messageService: MessageService,
     private readonly userService: UserService,
     private readonly activeConnectionsService: ActiveConnectionsService,
@@ -77,26 +80,56 @@ export class ChatGateway {
   }
 
   @SubscribeMessage(incommingEvents.SUBSCRIBE_ROOM)
-  async handleJoinRoom(client: Socket, payload: { roomId: string }) {
+  async handleJoinRoom(
+    client: Socket,
+    payload: { roomId: string },
+    callback: (response: any) => void,
+  ) {
     const userId = client.handshake.query.userId as string;
     const currentUser =
       await this.userService.getCurrentUserAccountData(userId);
+
+    const thisRoomDetailsRecord =
+      await this.chatDetailsService.getChatRoomWithCache(payload.roomId);
+
+    if (!thisRoomDetailsRecord) {
+      // Instead of emitting to client, use the callback
+      callback({
+        success: false,
+        message: strings.roomNotFound,
+      });
+      return;
+    }
+
+    const activeParticipants =
+      await this.activeConnectionsService.getAllParticipantsInRoomConnection(
+        payload.roomId,
+      );
+
+    callback({
+      success: true,
+      room: thisRoomDetailsRecord,
+      activeParticipants: Array.from(activeParticipants?.values()),
+    });
+
     this.chatService.handleJoinUserRoom({
       client,
-      userId: client.handshake.query.userId as string,
+      userId,
       roomId: payload.roomId,
       nickname: currentUser.nickname,
     });
   }
 
   @SubscribeMessage(incommingEvents.UNSUBSCRIBE_ROOM)
-  handleLeaveRoom(client: Socket, payload: { roomId: string }) {
+  async handleLeaveRoom(client: Socket, payload: { roomId: string }) {
     const userId = client.handshake.query.userId as string;
-    this.chatService.disconnectInterlocutorAllRooms({
+    const currentUser =
+      await this.userService.getCurrentUserAccountData(userId);
+    this.chatService.handleLeaveUserRoom({
       client,
       userId,
-      nickname: '',
-      interlocutorRoomIds: [payload.roomId],
+      roomId: payload.roomId,
+      nickname: currentUser.nickname,
       io: this.io,
     });
   }

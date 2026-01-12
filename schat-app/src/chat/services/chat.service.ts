@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
+import { SChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Namespace, Socket } from 'socket.io';
@@ -13,7 +13,7 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
   constructor(
-    @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
+    @InjectModel(SChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     private readonly chatDetailsService: ChatDetailsService,
     private readonly activeConnectionsService: ActiveConnectionsService,
   ) {}
@@ -133,7 +133,6 @@ export class ChatService {
   }) {
     client.leave(roomId);
 
-    /* Emitting Participiant Leave Room message  */
     io.to(roomId).emit(chatRoomEmitEvents.PARTICIPANT_DISCONNECTED, {
       message: strings.disconnectChatSuccess
         .replace('${chatName}', roomName || '')
@@ -141,7 +140,6 @@ export class ChatService {
       data: { roomId: roomId, userId, nickname },
     });
 
-    /* Removing User Id from the Chat Room Online Interlocutors pull */
     this.activeConnectionsService.removeParticipantRoomConnection(
       roomId,
       userId,

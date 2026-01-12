@@ -3,13 +3,13 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import { CHAT_DB_COLLECTIONS } from '../constants/chat.constants';
 import { UserProfile } from 'src/user/schemas/user.schema';
 
-export type ChatRoomDocument = HydratedDocument<ChatRoom>;
+export type ChatRoomDocument = HydratedDocument<SChatRoom>;
 
 @Schema({
   collection: CHAT_DB_COLLECTIONS.chatRoomProfile,
   timestamps: { createdAt: 'created', updatedAt: 'updated' },
 })
-export class ChatRoom {
+export class SChatRoom {
   _id: string;
 
   @Prop({ required: true })
@@ -24,4 +24,4 @@ export class ChatRoom {
   updated: Date;
 }
 
-export const ChatRoomSchema = SchemaFactory.createForClass(ChatRoom);
+export const ChatRoomSchema = SchemaFactory.createForClass(SChatRoom);

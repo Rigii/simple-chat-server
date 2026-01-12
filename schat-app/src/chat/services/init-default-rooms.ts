@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { MOCKED_CHAT_ROOMS } from '../constants/chat.mocked';
-import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
+import { SChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
@@ -9,7 +9,7 @@ export class InitDefaultRoomsService implements OnModuleInit {
   private readonly logger = new Logger(InitDefaultRoomsService.name);
 
   constructor(
-    @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
+    @InjectModel(SChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
   ) {}
 
   private async createDefaultChatRoomDBRecords() {
