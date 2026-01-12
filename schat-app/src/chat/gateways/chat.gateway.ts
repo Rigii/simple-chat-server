@@ -45,6 +45,13 @@ export class ChatGateway {
         userId,
         nickname: currentUser.nickname,
       });
+
+      this.chatService.notifyChatRoomsAboutParticipantConnection({
+        userId,
+        nickname: currentUser.nickname,
+        interlocutorRoomIds: currentUser.rooms,
+        io: this.io,
+      });
     } catch (error) {
       client.disconnect();
       throw error;
@@ -56,6 +63,9 @@ export class ChatGateway {
       const userId = client.handshake.query.userId as string;
       const currentUser =
         await this.userService.getCurrentUserAccountData(userId);
+      if (!currentUser) {
+        return;
+      }
 
       this.chatService.disconnectInterlocutorAllRooms({
         client,
@@ -88,7 +98,9 @@ export class ChatGateway {
     const userId = client.handshake.query.userId as string;
     const currentUser =
       await this.userService.getCurrentUserAccountData(userId);
-
+    if (!currentUser) {
+      return;
+    }
     const thisRoomDetailsRecord =
       await this.chatDetailsService.getChatRoomWithCache(payload.roomId);
 
@@ -125,6 +137,9 @@ export class ChatGateway {
     const userId = client.handshake.query.userId as string;
     const currentUser =
       await this.userService.getCurrentUserAccountData(userId);
+    if (!currentUser) {
+      return;
+    }
     this.chatService.handleLeaveUserRoom({
       client,
       userId,

@@ -116,6 +116,39 @@ export class ChatService {
     }
   }
 
+  async notifyChatRoomsAboutParticipantConnection({
+    userId,
+    nickname,
+    interlocutorRoomIds,
+    io,
+  }: {
+    userId: string;
+    nickname: string;
+    interlocutorRoomIds: string[];
+    io: Namespace;
+  }) {
+    try {
+      if (!interlocutorRoomIds) {
+        return;
+      }
+
+      for (const roomId of interlocutorRoomIds) {
+        io.to(roomId).emit(chatRoomEmitEvents.PARTICIPANT_JOINED_CHAT_APP, {
+          message: strings.joinChatAppSuccess.replace(
+            '${userNickname}',
+            nickname,
+          ),
+          data: {
+            userId,
+            nickname,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
   async handleLeaveUserRoom({
     client,
     userId,
@@ -133,7 +166,7 @@ export class ChatService {
   }) {
     client.leave(roomId);
 
-    io.to(roomId).emit(chatRoomEmitEvents.PARTICIPANT_DISCONNECTED, {
+    io.to(roomId).emit(chatRoomEmitEvents.PARTICIPANT_LEFT_CHAT_APP, {
       message: strings.disconnectChatSuccess
         .replace('${chatName}', roomName || '')
         .replace('${userNickname}', nickname),

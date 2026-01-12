@@ -1,8 +1,9 @@
 export const strings = {
-  joinChatSuccess: 'User ${userNickname} joined chat ${chatName}',
-  leaveChatSuccess: 'User ${userNickname} left chat ${chatName}',
+  joinChatAppSuccess: 'User ${userNickname} joined chat app',
+  joinChatRoomSuccess: 'User ${userNickname} joined chat room ${chatName}',
+  leaveChatRoomSuccess: 'User ${userNickname} left chat room ${chatName}',
   disconnectChatSuccess:
-    'User ${userNickname} disconnected from chat ${chatName}',
+    'User ${userNickname} disconnected from chat room ${chatName}',
   userDisconnectingError: 'Error while disconnecting user:',
   joinChatError: 'Join chat error',
   chatRoomsNotFound: 'No chat rooms found',
