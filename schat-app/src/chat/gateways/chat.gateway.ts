@@ -15,6 +15,7 @@ import { UserService } from 'src/user/services/user.service';
 import { ActiveConnectionsService } from '../services/active-connections.service';
 import { ChatDetailsService } from '../services/chat-details.service';
 import { strings } from '../strings';
+import { channelNamingContract } from 'src/constants/notification-channels';
 
 @WebSocketGateway({
   namespace: CHAT_NAMESPACES.chatRoom,
@@ -43,6 +44,16 @@ export class ChatGateway {
       this.activeConnectionsService.addUserConnection({
         clientId: client.id,
         userId,
+        nickname: currentUser.nickname,
+      });
+
+      /* Join user to their private channel */
+      const currentUserPrivateChannelName = channelNamingContract.user(userId);
+
+      this.chatService.handleJoinUserRoom({
+        client,
+        userId,
+        roomId: currentUserPrivateChannelName,
         nickname: currentUser.nickname,
       });
 

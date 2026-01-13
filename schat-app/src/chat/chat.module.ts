@@ -5,7 +5,7 @@ import { MessageService } from './services/message.service';
 import { ChatGateway } from './gateways/chat.gateway';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SChatRoom, ChatRoomSchema } from './schemas/chat-room.schema';
-import { UserProfile, UserProfileSchema } from 'src/user/schemas/user.schema';
+import { SUserProfile, UserProfileSchema } from 'src/user/schemas/user.schema';
 import { RoomMessage, RoomMessageSchema } from './schemas/room-message.schema';
 import { RedisService } from 'src/redis/redis.service';
 import { ChatController } from './controllers/chat.controller';
@@ -17,7 +17,7 @@ import { InitDefaultRoomsService } from './services/init-default-rooms';
   imports: [
     MongooseModule.forFeature([
       { name: SChatRoom.name, schema: ChatRoomSchema },
-      { name: UserProfile.name, schema: UserProfileSchema },
+      { name: SUserProfile.name, schema: UserProfileSchema },
       { name: RoomMessage.name, schema: RoomMessageSchema },
     ]),
     UserModule,

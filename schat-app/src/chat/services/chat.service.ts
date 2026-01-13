@@ -31,7 +31,6 @@ export class ChatService {
   }) => {
     try {
       /* Add room to global pool */
-      // this.activeConnectionsService.addRoomToGeneralPool(roomId);
 
       this.activeConnectionsService.addUserToRoom({ roomId, userId });
       /* Join WebSocket room */

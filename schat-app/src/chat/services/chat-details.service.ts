@@ -8,7 +8,7 @@ import { GetRoomDataDto } from '../dto/room-message.dto';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { strings } from '../strings';
 import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
-import { UserProfile } from 'src/user/schemas/user.schema';
+import { SUserProfile } from 'src/user/schemas/user.schema';
 import { UserService } from 'src/user/services/user.service';
 
 @Injectable()
@@ -150,9 +150,9 @@ export class ChatDetailsService {
 
   async addNewParticipantToRoom(
     dto: AddParticipantToChatRoomDto,
-  ): Promise<{ currentRoomData: SChatRoom; currentUserData: UserProfile }> {
+  ): Promise<{ currentRoomData: SChatRoom; currentUserData: SUserProfile }> {
     let currentRoomData: SChatRoom;
-    let currentUserData: UserProfile;
+    let currentUserData: SUserProfile;
 
     try {
       currentRoomData = await this.ChatRoomModel.findByIdAndUpdate(
