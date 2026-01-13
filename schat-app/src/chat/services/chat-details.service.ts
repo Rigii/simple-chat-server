@@ -130,7 +130,7 @@ export class ChatDetailsService {
       }).limit(limit);
 
       const activeParticipants =
-        await this.activeConnectionsService.getAllParticipantsInRoomConnection(
+        await this.activeConnectionsService.getAllParticipantsInRoom(
           getRoomDataDto.chatRoomId,
         );
 

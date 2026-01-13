@@ -40,7 +40,7 @@ export class ChatGateway {
         await this.userService.getCurrentUserAccountData(userId);
 
       /* Add clientId (device id) to the participiant connection set */
-      this.activeConnectionsService.addNewClientIdToParticipiantConnectionPool({
+      this.activeConnectionsService.addUserConnection({
         clientId: client.id,
         userId,
         nickname: currentUser.nickname,
@@ -114,7 +114,7 @@ export class ChatGateway {
     }
 
     const activeParticipants =
-      await this.activeConnectionsService.getAllParticipantsInRoomConnection(
+      await this.activeConnectionsService.getConnectedUsersInRoom(
         payload.roomId,
       );
 

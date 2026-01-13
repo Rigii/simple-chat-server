@@ -31,12 +31,9 @@ export class ChatService {
   }) => {
     try {
       /* Add room to global pool */
-      this.activeConnectionsService.addRoomToGeneralPool(roomId);
+      // this.activeConnectionsService.addRoomToGeneralPool(roomId);
 
-      this.activeConnectionsService.addParticipantToRoomConnection(
-        roomId,
-        userId,
-      );
+      this.activeConnectionsService.addUserToRoom({ roomId, userId });
       /* Join WebSocket room */
       await this.handleJoinChat({
         client,
@@ -77,16 +74,14 @@ export class ChatService {
     io: Namespace;
   }) {
     try {
-      this.activeConnectionsService.removeParticipantNestedConnection(
-        userId,
-        client.id,
-      );
-
       const connectionsPerParticipant =
-        this.activeConnectionsService.getAllParticipantsPoolConnection(userId);
+        this.activeConnectionsService.getUserConnections(userId);
 
       if (connectionsPerParticipant.size === 0) {
-        this.activeConnectionsService.deleteUserGeneralConnection(userId);
+        this.activeConnectionsService.removeUserConnection({
+          userId,
+          clientId: client.id,
+        });
 
         this.logger.log(
           `${nickname}: ${strings.userHasNoMoreActiveConnections}`,
@@ -173,10 +168,7 @@ export class ChatService {
       data: { roomId: roomId, userId, nickname },
     });
 
-    this.activeConnectionsService.removeParticipantRoomConnection(
-      roomId,
-      userId,
-    );
+    this.activeConnectionsService.removeUserFromRoom(roomId, userId);
 
     this.logger.log(`${nickname} ${strings.leftRoom} ${roomId}`);
   }
