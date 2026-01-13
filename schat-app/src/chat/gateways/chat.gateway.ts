@@ -118,6 +118,13 @@ export class ChatGateway {
         payload.roomId,
       );
 
+    this.chatService.notifyChatRoomsAboutParticipantConnection({
+      userId,
+      nickname: currentUser.nickname,
+      interlocutorRoomIds: [payload.roomId],
+      io: this.io,
+    });
+
     callback({
       success: true,
       room: thisRoomDetailsRecord,
