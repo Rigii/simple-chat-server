@@ -77,7 +77,6 @@ export class ChatGateway {
       });
     } catch (error) {
       client.disconnect();
-      throw error;
     }
   }
 
