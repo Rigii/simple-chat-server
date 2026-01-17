@@ -14,7 +14,7 @@ export class SUserProfile {
     type: String,
     unique: true,
     index: true,
-    default: () => `chat_${randomUUID()}`,
+    default: () => randomUUID(),
   })
   public_id: string;
 

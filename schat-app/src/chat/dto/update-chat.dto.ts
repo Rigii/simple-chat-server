@@ -8,5 +8,7 @@ export class AddParticipantToChatRoomDto {
   @IsNotEmpty()
   userId: string;
   @IsNotEmpty()
+  publicUserId: string;
+  @IsNotEmpty()
   roomId: string;
 }

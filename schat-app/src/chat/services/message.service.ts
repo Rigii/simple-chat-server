@@ -74,7 +74,13 @@ export class MessageService {
     io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
   }): Promise<RoomMessage | void> {
     try {
-      const { chatRoomId, message, participantId, nickname } = payload;
+      const {
+        chatRoomId,
+        message,
+        participantId,
+        nickname,
+        participantPublicId,
+      } = payload;
       const currentChatRoom =
         await this.chatDetailsService.getChatRoomWithCache(chatRoomId);
 
@@ -118,7 +124,7 @@ export class MessageService {
       }
       /* Save message to the Mongo DB */
       const createdRoomMessage = await new this.RoomMessageModel({
-        participantId: participantId,
+        participantPublicId,
         nickname: nickname,
         message,
         chatRoomId,
@@ -126,6 +132,7 @@ export class MessageService {
       });
 
       const savedMessage = await createdRoomMessage.save();
+
       const messageObject = {
         id: savedMessage._id.toString(),
         ...savedMessage.toObject(),

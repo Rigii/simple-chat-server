@@ -9,36 +9,35 @@ export class ActiveConnectionsService {
   private readonly logger = new Logger(ActiveConnectionsService.name);
 
   addUserConnection({
-    userId,
+    userPublicId,
     clientId,
     nickname,
   }: {
-    userId: string;
+    userPublicId: string;
     clientId: string;
     nickname?: string;
   }): void {
-    this.logger.log(`${nickname || userId} ${strings.isActive}`);
-
-    if (!this.userConnections.has(userId)) {
-      this.userConnections.set(userId, new Set());
+    this.logger.log(`${nickname || userPublicId} ${strings.isActive}`);
+    if (!this.userConnections.has(userPublicId)) {
+      this.userConnections.set(userPublicId, new Set());
     }
 
-    this.userConnections.get(userId)!.add(clientId);
+    this.userConnections.get(userPublicId)!.add(clientId);
   }
 
   removeUserConnection({
-    userId,
+    userPublicId,
     clientId,
   }: {
-    userId: string;
+    userPublicId: string;
     clientId: string;
   }): void {
-    const userClients = this.userConnections.get(userId);
+    const userClients = this.userConnections.get(userPublicId);
     if (userClients) {
       userClients.delete(clientId);
 
       if (userClients.size === 0) {
-        this.userConnections.delete(userId);
+        this.userConnections.delete(userPublicId);
       }
     }
   }
@@ -55,26 +54,26 @@ export class ActiveConnectionsService {
   /* Room Management */
   addUserToRoom({
     roomId,
-    userId,
+    userPublicId,
   }: {
     roomId: string;
-    userId: string;
+    userPublicId: string;
   }): boolean {
     if (!this.roomParticipants.has(roomId)) {
       this.roomParticipants.set(roomId, new Set());
     }
 
     const roomUsers = this.roomParticipants.get(roomId)!;
-    if (roomUsers.has(userId)) {
+    if (roomUsers.has(userPublicId)) {
       return false;
     }
 
-    roomUsers.add(userId);
+    roomUsers.add(userPublicId);
     return true;
   }
 
-  removeUserFromRoom(roomId: string, userId: string): void {
-    this.roomParticipants.get(roomId)?.delete(userId);
+  removeUserFromRoom(roomId: string, userPublicId: string): void {
+    this.roomParticipants.get(roomId)?.delete(userPublicId);
   }
 
   getRoomParticipants(roomId: string): Set<string> {
@@ -104,7 +103,7 @@ export class ActiveConnectionsService {
     }
 
     if (foundUserId) {
-      this.removeUserConnection({ userId: foundUserId, clientId });
+      this.removeUserConnection({ userPublicId: foundUserId, clientId });
 
       if (!this.isUserConnected(foundUserId)) {
         this.removeUserFromAllRooms(foundUserId);
@@ -124,11 +123,11 @@ export class ActiveConnectionsService {
     clientId: string,
     nickname?: string,
   ): void {
-    this.addUserConnection({ userId, clientId, nickname });
+    this.addUserConnection({ userPublicId: userId, clientId, nickname });
   }
 
-  removeClientFromUserConnection(userId: string, clientId: string): void {
-    this.removeUserConnection({ userId, clientId });
+  removeClientFromUserConnection(userPublicId: string, clientId: string): void {
+    this.removeUserConnection({ userPublicId, clientId });
   }
 
   isUserInRoom(roomId: string, userId: string): boolean {

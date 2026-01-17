@@ -20,19 +20,19 @@ export class ChatService {
 
   handleJoinUserRoom = async ({
     client,
-    userId,
+    userPublicId,
     roomId,
     nickname,
   }: {
     client: Socket;
-    userId: string;
+    userPublicId: string;
     roomId: string;
     nickname: string;
   }) => {
     try {
       /* Add room to global pool */
 
-      this.activeConnectionsService.addUserToRoom({ roomId, userId });
+      this.activeConnectionsService.addUserToRoom({ roomId, userPublicId });
       /* Join WebSocket room */
       await this.handleJoinChat({
         client,
@@ -61,24 +61,24 @@ export class ChatService {
 
   async disconnectInterlocutorAllRooms({
     client,
-    userId,
+    userPublicId,
     nickname,
     interlocutorRoomIds,
     io,
   }: {
     client: Socket;
-    userId: string;
+    userPublicId: string;
     nickname: string;
     interlocutorRoomIds: string[];
     io: Namespace;
   }) {
     try {
       const connectionsPerParticipant =
-        this.activeConnectionsService.getUserConnections(userId);
+        this.activeConnectionsService.getUserConnections(userPublicId);
 
       if (connectionsPerParticipant.size === 0) {
         this.activeConnectionsService.removeUserConnection({
-          userId,
+          userPublicId,
           clientId: client.id,
         });
 
@@ -98,7 +98,7 @@ export class ChatService {
       for (const room of chatRooms) {
         await this.handleLeaveUserRoom({
           client,
-          userId,
+          userPublicId,
           nickname,
           roomId: room._id.toString(),
           roomName: room.chat_name,
@@ -111,12 +111,12 @@ export class ChatService {
   }
 
   async notifyChatRoomsAboutParticipantConnection({
-    userId,
+    userPublicId,
     nickname,
     interlocutorRoomIds,
     io,
   }: {
-    userId: string;
+    userPublicId: string;
     nickname: string;
     interlocutorRoomIds: string[];
     io: Namespace;
@@ -133,7 +133,7 @@ export class ChatService {
             nickname,
           ),
           data: {
-            userId,
+            userPublicId,
             nickname,
           },
         });
@@ -145,14 +145,14 @@ export class ChatService {
 
   async handleLeaveUserRoom({
     client,
-    userId,
+    userPublicId,
     nickname,
     roomId,
     roomName,
     io,
   }: {
     client: Socket;
-    userId: string;
+    userPublicId: string;
     nickname: string;
     roomId: string;
     roomName?: string;
@@ -164,10 +164,10 @@ export class ChatService {
       message: strings.disconnectChatSuccess
         .replace('${chatName}', roomName || '')
         .replace('${userNickname}', nickname),
-      data: { roomId: roomId, userId, nickname },
+      data: { roomId: roomId, userPublicId, nickname },
     });
 
-    this.activeConnectionsService.removeUserFromRoom(roomId, userId);
+    this.activeConnectionsService.removeUserFromRoom(roomId, userPublicId);
 
     this.logger.log(`${nickname} ${strings.leftRoom} ${roomId}`);
   }

@@ -43,22 +43,24 @@ export class ChatGateway {
       /* Add clientId (device id) to the participiant connection set */
       this.activeConnectionsService.addUserConnection({
         clientId: client.id,
-        userId,
+        userPublicId: currentUser.public_id,
         nickname: currentUser.nickname,
       });
 
       /* Join user to their private channel */
-      const currentUserPrivateChannelName = channelNamingContract.user(userId);
+      const currentUserPrivateChannelName = channelNamingContract.user(
+        currentUser.public_id,
+      );
 
       this.chatService.handleJoinUserRoom({
         client,
-        userId,
+        userPublicId: currentUser.public_id,
         roomId: currentUserPrivateChannelName,
         nickname: currentUser.nickname,
       });
 
       this.chatService.notifyChatRoomsAboutParticipantConnection({
-        userId,
+        userPublicId: currentUser.public_id,
         nickname: currentUser.nickname,
         interlocutorRoomIds: currentUser.rooms,
         io: this.io,
@@ -81,7 +83,7 @@ export class ChatGateway {
       this.chatService.disconnectInterlocutorAllRooms({
         client,
         nickname: currentUser.nickname,
-        userId,
+        userPublicId: currentUser.public_id,
         interlocutorRoomIds: currentUser.rooms,
         io: this.io,
       });
@@ -116,7 +118,6 @@ export class ChatGateway {
       await this.chatDetailsService.getChatRoomWithCache(payload.roomId);
 
     if (!thisRoomDetailsRecord) {
-      // Instead of emitting to client, use the callback
       callback({
         success: false,
         message: strings.roomNotFound,
@@ -130,7 +131,7 @@ export class ChatGateway {
       );
 
     this.chatService.notifyChatRoomsAboutParticipantConnection({
-      userId,
+      userPublicId: currentUser.public_id,
       nickname: currentUser.nickname,
       interlocutorRoomIds: [payload.roomId],
       io: this.io,
@@ -144,7 +145,7 @@ export class ChatGateway {
 
     this.chatService.handleJoinUserRoom({
       client,
-      userId,
+      userPublicId: currentUser.public_id,
       roomId: payload.roomId,
       nickname: currentUser.nickname,
     });
@@ -160,7 +161,7 @@ export class ChatGateway {
     }
     this.chatService.handleLeaveUserRoom({
       client,
-      userId,
+      userPublicId: currentUser.public_id,
       roomId: payload.roomId,
       nickname: currentUser.nickname,
       io: this.io,

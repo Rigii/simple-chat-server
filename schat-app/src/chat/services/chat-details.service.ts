@@ -112,8 +112,12 @@ export class ChatDetailsService {
     roomData: SChatRoom;
   }> {
     try {
-      const isParticipant = await this.ChatRoomModel.findById(
+      const currentRoom = await this.ChatRoomModel.findById(
         getRoomDataDto.chatRoomId,
+      );
+
+      const isParticipant = currentRoom.participants.some(
+        (participant) => participant._id.toString() === getRoomDataDto.userId,
       );
 
       if (!isParticipant) {
