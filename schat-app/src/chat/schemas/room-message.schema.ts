@@ -19,7 +19,7 @@ export class RoomMessage {
   nickname: string;
 
   @Prop()
-  participantId: string;
+  participantPublicId: string;
 
   @Prop()
   chatRoomId: string;

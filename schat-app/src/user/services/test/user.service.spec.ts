@@ -4,7 +4,7 @@ import { UserService } from '../user.service';
 import { Logger } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { CreateUserDto } from 'src/user/dto/user.dto';
-import { UserProfile } from 'src/user/schemas/user.schema';
+import { SUserProfile } from 'src/user/schemas/user.schema';
 import {
   mockExistingUser,
   mockNewUser,
@@ -24,7 +24,7 @@ describe('UserService', () => {
       providers: [
         UserService,
         {
-          provide: getModelToken(UserProfile.name),
+          provide: getModelToken(SUserProfile.name),
           useValue: mockUserProfileModel,
         },
         {

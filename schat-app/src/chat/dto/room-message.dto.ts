@@ -8,6 +8,8 @@ export class PostRoomMessageDto {
   @IsNotEmpty()
   participantId: string;
   @IsNotEmpty()
+  participantPublicId: string;
+  @IsNotEmpty()
   nickname: string;
 }
 

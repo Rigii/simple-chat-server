@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RedisService } from 'src/redis/redis.service';
-import { ChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
+import { SChatRoom, ChatRoomDocument } from '../schemas/chat-room.schema';
 import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
 import { Model } from 'mongoose';
 import { ActiveConnectionsService } from './active-connections.service';
@@ -8,7 +8,7 @@ import { GetRoomDataDto } from '../dto/room-message.dto';
 import { RoomMessage } from '../schemas/room-message.schema';
 import { strings } from '../strings';
 import { AddParticipantToChatRoomDto } from '../dto/update-chat.dto';
-import { UserProfile } from 'src/user/schemas/user.schema';
+import { SUserProfile } from 'src/user/schemas/user.schema';
 import { UserService } from 'src/user/services/user.service';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class ChatDetailsService {
   private readonly logger = new Logger(ChatDetailsService.name);
 
   constructor(
-    @InjectModel(ChatRoom.name)
+    @InjectModel(SChatRoom.name)
     private ChatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(RoomMessage.name) private RoomMessageModel: Model<RoomMessage>,
     private readonly redisService: RedisService,
@@ -24,14 +24,14 @@ export class ChatDetailsService {
     private readonly userProfileService: UserService,
   ) {}
 
-  async storeChatRoomWithCache(room: ChatRoom): Promise<ChatRoom | null> {
+  async storeChatRoomWithCache(room: SChatRoom): Promise<SChatRoom | null> {
     const cacheKey = `chatroom:${room._id}`;
     await this.redisService.set(cacheKey, JSON.stringify(room), 3600);
 
     return room;
   }
 
-  async getChatRoomWithCache(chatRoomId: string): Promise<ChatRoom | null> {
+  async getChatRoomWithCache(chatRoomId: string): Promise<SChatRoom | null> {
     const cacheKey = `chatroom:${chatRoomId}`;
     const cached = await this.redisService.get(cacheKey);
 
@@ -53,9 +53,9 @@ export class ChatDetailsService {
 
   async getInterlocutorChatRoomsFromCache(
     interlocutorRoomIds: string[],
-  ): Promise<ChatRoom[]> {
+  ): Promise<SChatRoom[]> {
     try {
-      const rooms: ChatRoom[] = [];
+      const rooms: SChatRoom[] = [];
       const missingRoomIds: string[] = [];
 
       for (const roomId of interlocutorRoomIds) {
@@ -63,7 +63,7 @@ export class ChatDetailsService {
         const cached = await this.redisService.client.get(key);
 
         if (cached) {
-          rooms.push(JSON.parse(cached as string) as ChatRoom);
+          rooms.push(JSON.parse(cached as string) as SChatRoom);
         } else {
           missingRoomIds.push(roomId);
         }
@@ -97,7 +97,7 @@ export class ChatDetailsService {
     }
   }
 
-  async getAllAvailableRooms(): Promise<ChatRoom[]> {
+  async getAllAvailableRooms(): Promise<SChatRoom[]> {
     const rooms = await this.ChatRoomModel.find()
       .populate('participants')
       .lean()
@@ -109,11 +109,15 @@ export class ChatDetailsService {
   async getRoomData(getRoomDataDto: GetRoomDataDto): Promise<{
     messages: RoomMessage[];
     activeParticipants: string[];
-    roomData: ChatRoom;
+    roomData: SChatRoom;
   }> {
     try {
-      const isParticipant = await this.ChatRoomModel.findById(
+      const currentRoom = await this.ChatRoomModel.findById(
         getRoomDataDto.chatRoomId,
+      );
+
+      const isParticipant = currentRoom.participants.some(
+        (participant) => participant._id.toString() === getRoomDataDto.userId,
       );
 
       if (!isParticipant) {
@@ -130,7 +134,7 @@ export class ChatDetailsService {
       }).limit(limit);
 
       const activeParticipants =
-        await this.activeConnectionsService.getAllParticipantsInRoomConnection(
+        await this.activeConnectionsService.getAllParticipantsInRoom(
           getRoomDataDto.chatRoomId,
         );
 
@@ -150,9 +154,9 @@ export class ChatDetailsService {
 
   async addNewParticipantToRoom(
     dto: AddParticipantToChatRoomDto,
-  ): Promise<{ currentRoomData: ChatRoom; currentUserData: UserProfile }> {
-    let currentRoomData: ChatRoom;
-    let currentUserData: UserProfile;
+  ): Promise<{ currentRoomData: SChatRoom; currentUserData: SUserProfile }> {
+    let currentRoomData: SChatRoom;
+    let currentUserData: SUserProfile;
 
     try {
       currentRoomData = await this.ChatRoomModel.findByIdAndUpdate(

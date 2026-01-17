@@ -1,11 +1,13 @@
 export const chatRoomEmitEvents = {
   CLIENT_READY: 'client_ready',
   JOIN_CHAT_SUCCESS: 'join_chat_success',
-  USER_JOINED_CHAT: 'user_joined_chat',
+  PARTICIPANT_JOINED_CHAT_APP: 'participant_joined_chat_app',
   USER_LEFT_CHAT: 'user_left_chat',
   JOIN_CHAT_ERROR: 'join_chat_error',
+  ROOM_DETAILS: 'room_details',
+  FIND_ROOM_RECORD_ERROR: 'find_room_record_error',
   NEW_ROOM_PARTICIPANT_ADDED: 'new_room_participant_added',
-  PARTICIPANT_DISCONNECTED: 'participant_disconnected',
+  PARTICIPANT_LEFT_CHAT_APP: 'participant_left_chat_app',
   ADD_CHAT_PARTICIPANTS_ERROR: 'add_chat_participants_error',
   USER_CHAT_ROOM_DELETED: 'user_chat_room_deleted',
 };
@@ -24,7 +26,8 @@ export const socketMessageNamespaces = {
 };
 
 export const incommingEvents = {
-  JOIN_CHAT: 'join_chat',
+  SUBSCRIBE_ROOM: 'subscribe_room',
+  UNSUBSCRIBE_ROOM: 'unsubscribe_room',
   LEAVE_CHAT: 'leave_chat',
   CHAT_ROOM_MESSAGE: 'chat_room_message',
   HANDSHAKE: 'handshake',

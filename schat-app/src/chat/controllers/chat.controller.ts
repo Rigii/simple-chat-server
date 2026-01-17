@@ -18,8 +18,8 @@ export class ChatController {
   ) {}
 
   @Post(CHAT_ROUTES.getChatMessages)
-  create(@Body() GetRoomDataDto: GetRoomDataDto) {
-    return this.messageService.getRoomMessages(GetRoomDataDto);
+  create(@Body() dto: GetRoomDataDto) {
+    return this.messageService.getRoomMessages(dto);
   }
 
   @Post(CHAT_ROUTES.getAllChatRooms)

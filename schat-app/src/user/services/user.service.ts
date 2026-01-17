@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from '../dto/user.dto';
-import { UserProfile } from '../schemas/user.schema';
+import { SUserProfile } from '../schemas/user.schema';
 import { strings } from '../strings';
 
 @Injectable()
@@ -10,7 +10,8 @@ export class UserService {
   private readonly logger = new Logger(UserService.name);
 
   constructor(
-    @InjectModel(UserProfile.name) private UserProfileModel: Model<UserProfile>,
+    @InjectModel(SUserProfile.name)
+    private UserProfileModel: Model<SUserProfile>,
   ) {}
 
   async getCurrentUserAccountData(userId: string) {
@@ -51,7 +52,7 @@ export class UserService {
     }
   }
 
-  async addRoomToUser(userId: string, roomId: string): Promise<UserProfile> {
+  async addRoomToUser(userId: string, roomId: string): Promise<SUserProfile> {
     return this.UserProfileModel.findByIdAndUpdate(
       userId,
       { $addToSet: { rooms: roomId } },
