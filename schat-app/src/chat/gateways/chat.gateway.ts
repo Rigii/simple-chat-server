@@ -59,6 +59,16 @@ export class ChatGateway {
         nickname: currentUser.nickname,
       });
 
+      /* Defive user as an active for the all users rooms*/
+      for (const roomId of currentUser.rooms) {
+        this.chatService.handleJoinUserRoom({
+          client,
+          userPublicId: currentUser.public_id,
+          roomId: roomId,
+          nickname: currentUser.nickname,
+        });
+      }
+
       this.chatService.notifyChatRoomsAboutParticipantConnection({
         userPublicId: currentUser.public_id,
         nickname: currentUser.nickname,
@@ -136,7 +146,7 @@ export class ChatGateway {
       interlocutorRoomIds: [payload.roomId],
       io: this.io,
     });
-
+    console.log(7777, activeParticipants);
     callback({
       success: true,
       room: thisRoomDetailsRecord,
